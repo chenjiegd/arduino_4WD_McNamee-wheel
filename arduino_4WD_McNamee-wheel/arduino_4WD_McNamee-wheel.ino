@@ -59,6 +59,7 @@ void setup()
 
 void loop()
 {
+	brake();
 	// run(100);
 	// delay(1000);
 	// back(100);
