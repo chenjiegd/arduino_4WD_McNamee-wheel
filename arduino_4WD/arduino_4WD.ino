@@ -1,5 +1,13 @@
+#define wusicaijuan chenshuaiqi
+
+#include <Adafruit_NeoPixel.h> //库文件
+#define PIN 6				   //定义RGB灯的引脚
+#define MAX_LED 1			   //小车一共有1个RGB灯
+
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(MAX_LED, PIN, NEO_RGB + NEO_KHZ800);
+
 #include <Arduino.h>
-#include <Adafruit_NeoPixel.h> //编程灯
+//#include <Adafruit_NeoPixel.h> //编程灯
 #include <Wire.h>
 #include <Adafruit_PWMServoDriver.h>
 #include <IRremote.h> //红外
@@ -32,8 +40,6 @@ Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver(0x40);
 #define SERVOMIN 150 // this is the 'minimum' pulse length count (out of 4096)
 #define SERVOMAX 600 // this is the 'maximum' pulse length count (out of 4096)
 
-#define DIN 9
-
 #define run_car '1'   //按键前
 #define back_car '2'  //按键后
 #define left_car '3'  //按键左
@@ -57,10 +63,16 @@ enum
 
 char enServo[] = {0, 1, 2, 3};
 
-int key = 7;   //按键key
+int key = 7; //按键key
 int LED = 11;
 int Echo = 13; //Echo回声脚
 int Trig = 12; //Trig触发脚
+
+const int LdrSensorLeft = A4;  //定义左边光敏电阻引脚为A4
+const int LdrSensorRight = A2; //定义右边光敏电阻引脚为A2
+
+int LdrSersorLeftValue; //定义变量来保存光敏电阻采集的数据大小
+int LdrSersorRightValue;
 
 int RECV_PIN = A0; //定义红外接收器的引脚为2
 IRrecv irrecv(RECV_PIN);
@@ -93,6 +105,33 @@ long flag_nine = 0xFF58A7;		 //9
 int CarSpeed = 200;
 int distance = 0;
 
+/*串口数据设置*/
+int IncomingByte = 0;			 //接收到的 data byte
+String InputString = "";		 //用来储存接收到的内容
+boolean NewLineReceived = false; //前一次数据结束标志
+boolean StartBit = false;		 //协议开始标志
+String ReturnTemp = "";			 //存储返回值
+/*状态机状态*/
+int g_CarState = enSTOP; //1前2后3左4右0停止
+int g_modeSelect = 0;	//0是默认状态;  1:红外遥控 2:巡线模式 3:超声波避障 4: 七彩探照 5: 寻光模式 6: 红外跟踪
+boolean g_motor = false;
+
+/*电压检测查表法定义数组(电压值,A0端口读到的模拟值)*/
+float voltage_table[21][2] =
+	{
+		{6.46, 676}, {6.51, 678}, {6.61, 683}, {6.72, 687}, {6.82, 691}, {6.91, 695}, {7.01, 700}, {7.11, 703}, {7.20, 707}, {7.31, 712}, {7.4, 715}, {7.5, 719}, {7.6, 723}, {7.7, 728}, {7.81, 733}, {7.91, 740}, {8.02, 741}, {8.1, 745}, {8.22, 749}, {8.30, 753}, {8.4, 758}};
+
+/*printf格式化字符串初始化*/
+int serial_putc(char c, struct __file *)
+{
+	Serial.write(c);
+	return c;
+}
+void printf_begin(void)
+{
+	fdevopen(&serial_putc, 0);
+}
+
 /**
 * Function       setup
 * @author        wusicaijuan
@@ -107,10 +146,13 @@ void setup()
 	//初始化电机驱动IO口为输出方式
 	//串口波特率设置
 	Serial.begin(9600);
+	printf_begin();
 
 	pwm.begin();
-
 	pwm.setPWMFreq(60); // Analog servos run at ~60 Hz updates
+
+	strip.begin();
+	strip.show();
 
 	irrecv.enableIRIn(); // 初始化红外接收器
 
@@ -118,14 +160,89 @@ void setup()
 	//初始化超声波引脚
 	pinMode(Echo, INPUT);  // 定义超声波输入脚
 	pinMode(Trig, OUTPUT); // 定义超声波输出脚
+	//定义左右光敏电阻传感器为输入接口
+	pinMode(LdrSensorLeft, INPUT);
+	pinMode(LdrSensorRight, INPUT);
+
+	randomSeed(analogRead(2)); //设置一个随机数产生源模拟口2
 
 	pinMode(LED, OUTPUT);
 	brake();
-	keysacn();
+	// keysacn();
+	all_RGB(0,80,80);
 }
 
 void loop()
 {
+	// if (NewLineReceived)
+	// {
+	// 	serial_data_parse(); //调用串口解析函数
+	// }
+
+	// // 切换不同功能模式, 功能模式显示
+	// switch (g_modeSelect)
+	// {
+	// case 1:
+	// 	break; //暂时保留
+	// case 2:
+	// 	Tracking_Mode();
+	// 	break; //巡线模式
+	// case 3:
+	// 	Ultrasonic_avoidMode();
+	// 	break; //超声波避障模式
+	// case 4:
+	// 	FindColor_Mode();
+	// 	break; //七彩颜色识别模式
+	// case 5:
+	// 	LightSeeking_Mode();
+	// 	break; //寻光模式
+	// case 6:
+	// 	Ir_flow_Mode();
+	// 	break; //跟随模式
+	// }
+
+	// //让小车串口平均每秒发送采集的数据给手机蓝牙apk
+	// //避免串口打印数据速度过快,造成apk无法正常运行
+	// if (g_modeSelect == 0 && g_motor == false)
+	// {
+	// 	time--;
+	// 	if (time == 0)
+	// 	{
+	// 		count--;
+	// 		time = 20000;
+	// 		if (count == 0)
+	// 		{
+
+	// 			serial_data_postback();
+	// 			time = 20000;
+	// 			count = 10;
+	// 		}
+	// 	}
+	// }
+
+	//寻光
+	//遇到光线,寻光模块的指示灯灭,端口电平为HIGH
+	//未遇光线,寻光模块的指示灯亮,端口电平为LOW
+	// LdrSersorRightValue = digitalRead(LdrSensorRight);
+	// LdrSersorLeftValue  = digitalRead(LdrSensorLeft);
+
+	// if (LdrSersorLeftValue == HIGH && LdrSersorRightValue == HIGH)
+	// {
+	// 	run();   //两侧均有光时信号为HIGH，光敏电阻指示灯灭,小车前进
+	// }
+	// else if (LdrSersorLeftValue == HIGH && LdrSersorRightValue == LOW)
+	// {
+	// 	left(); //左边探测到有光，有信号返回，向左转
+	// }
+	// else if (LdrSersorRightValue == HIGH && LdrSersorLeftValue == LOW)
+	// {
+	// 	right();//右边探测到有光，有信号返回，向右转
+	// }
+	// else
+	// {
+	// 	brake();//均无光，停止
+	// }
+
 	//红外遥控
 	if (irrecv.decode(&results)) //调用库函数：解码
 	{
@@ -228,6 +345,7 @@ void loop()
 		else
 		{
 			/* code */
+			brake();
 		}
 		last = millis();
 		irrecv.resume();
@@ -796,3 +914,479 @@ void dump(decode_results *results)
 		brake();
 	}
 }
+
+/**
+* Function       all_RGB
+* @author        wusicaijuan
+* @date          2019.06.04
+* @brief         全部RGB灯亮
+* @param[in1]    R
+* @param[in2]    G
+* @param[in3]    B
+* @retval        void
+* @par History   无
+*/
+void all_RGB(int R, int G, int B)
+{
+	uint8_t i = 0;
+	uint32_t color = strip.Color(G, R, B);
+	strip.setPixelColor(0, color);
+	strip.show();
+}
+
+/**
+* Function       breathing_light
+* @author        wusicaijuan
+* @date          2019.06.06
+* @brief         呼吸灯
+* @param[in1]    brightness
+* @param[in2]    time
+* @param[in3]    increament
+* @retval        void
+* @par History   无
+*/
+void breathing_light_RGB(int brightness, int time, int increament)
+{
+	uint8_t i = 0;
+	uint32_t color;
+	for (int b = 0; b < brightness; b += increament)
+	{
+		color = strip.Color(b, 0, 0);
+		strip.setPixelColor(i, color);
+		strip.show();
+		delay(time);
+	}
+	for (int b = 255; b > 0; b -= increament)
+	{
+		color = strip.Color(b, 0, 0);
+		strip.setPixelColor(i, color);
+		strip.show();
+		delay(time);
+	}
+}
+
+// /**
+// * Function       voltage_test
+// * @author        Danny
+// * @date          2017.07.26
+// * @brief         电池电压引脚检测
+// * @param[in]     void
+// * @param[out]    void
+// * @retval        void
+// * @par History   无
+// */
+// float voltage_test()
+// {
+// 	pinMode(VoltagePin, INPUT);			   //电压检测引脚和蜂鸣器引脚A5调整引脚模式来分时复用
+// 	VoltageValue = analogRead(VoltagePin); //读取A0口值,换算为电压值
+
+// 	//方法一:通过电路原理图和采集的A0口模拟值得到电压值
+// 	//Serial.println(VoltageValue);
+// 	//VoltageValue = (VoltageValue / 1023) * 5.02 * 1.75  ;
+// 	//Voltage是端口A0采集到的ad值（0-1023），
+// 	//1.75是（R14+R15）/R15的结果，其中R14=15K,R15=20K）。
+
+// 	/*查表记录打开*/
+// 	//  float voltage = 0;
+// 	//  voltage = VoltageValue;
+// 	//  return voltage;
+
+// 	//方法二:通过提前测量6.4-8.4v所对应的A0口模拟值,再通过查表法确定其值
+// 	//       这种方法的误差小于0.1v
+// 	int i = 0;
+// 	float voltage = 0;
+// 	if (VoltageValue > voltage_table[20][1])
+// 	{
+// 		voltage = 8.4;
+// 		return voltage;
+// 	}
+// 	if (VoltageValue < voltage_table[0][1])
+// 	{
+// 		voltage = 6.4;
+// 		return voltage;
+// 	}
+// 	for (i = 0; i < 20; i++)
+// 	{
+// 		if (VoltageValue >= voltage_table[i][1] && VoltageValue <= voltage_table[i + 1][1])
+// 		{
+// 			voltage = voltage_table[i][0] + (VoltageValue - voltage_table[i][1]) * ((voltage_table[i + 1][0] - voltage_table[i][0]) / (voltage_table[i + 1][1] - voltage_table[i][1]));
+// 			return voltage;
+// 		}
+// 	}
+// 	pinMode(VoltagePin, OUTPUT);
+// 	digitalWrite(buzzer, HIGH);
+// 	return 0;
+// }
+
+// /**
+// * Function       serial_data_parse
+// * @author        Danny
+// * @date          2017.07.25
+// * @brief         串口数据解析并指定相应的动作
+// * @param[in]     void
+// * @param[out]    void
+// * @retval        void
+// * @par History   无
+// */
+// void serial_data_parse()
+// {
+
+// 	/*解析模式切换*/
+// 	//先判断是否是模式选择
+// 	if (InputString.indexOf("MODE") > 0 && InputString.indexOf("4WD") > 0)
+// 	{
+// 		if (InputString[10] == '0') //停止模式
+// 		{
+// 			brake();
+// 			g_CarState = enSTOP;
+// 			g_modeSelect = 0;
+// 			//position = 0;
+// 			BeepOnOffMode();
+// 		}
+// 		else
+// 		{
+// 			switch (InputString[9])
+// 			{
+// 			case '0':
+// 				g_modeSelect = 0;
+// 				ModeBEEP(0);
+// 				break;
+// 			case '1':
+// 				g_modeSelect = 1;
+// 				ModeBEEP(1);
+// 				break;
+// 			case '2':
+// 				g_modeSelect = 2;
+// 				ModeBEEP(2);
+// 				break;
+// 			case '3':
+// 				g_modeSelect = 3;
+// 				ModeBEEP(3);
+// 				break;
+// 			case '4':
+// 				g_modeSelect = 4;
+// 				ModeBEEP(4);
+// 				break;
+// 			case '5':
+// 				g_modeSelect = 5;
+// 				ModeBEEP(5);
+// 				break;
+// 			case '6':
+// 				g_modeSelect = 6;
+// 				ModeBEEP(6);
+// 				break;
+// 			default:
+// 				g_modeSelect = 0;
+// 				break;
+// 			}
+// 			delay(1000);
+// 			BeepOnOffMode();
+// 		}
+// 		InputString = ""; //清空串口数据
+// 		NewLineReceived = false;
+// 		return;
+// 	}
+
+// 	//非apk模式则退出
+// 	if (g_modeSelect != 0) //
+// 	{
+// 		InputString = ""; //清空串口数据
+// 		NewLineReceived = false;
+// 		return;
+// 	}
+
+// 	//解析上位机发来的舵机云台的控制指令并执行舵机旋转
+// 	//如:$4WD,PTZ180# 舵机转动到180度
+// 	if (InputString.indexOf("PTZ") > 0)
+// 	{
+// 		int m_kp;
+// 		int i = InputString.indexOf("PTZ"); //寻找以PTZ开头,#结束中间的字符
+// 		int ii = InputString.indexOf("#", i);
+// 		if (ii > i)
+// 		{
+// 			String m_skp = InputString.substring(i + 3, ii);
+// 			int m_kp = m_skp.toInt(); //将找到的字符串变成整型
+// 			//      Serial.print("PTZ:");
+// 			//      Serial.println(m_kp);
+// 			servo_appointed_detection(180 - m_kp); //转动到指定角度m_kp
+// 			InputString = "";					   //清空串口数据
+// 			NewLineReceived = false;
+// 			return;
+// 		}
+// 	}
+// 	//解析上位机发来的七彩探照灯指令并点亮相应的颜色
+// 	//如:$4WD,CLR255,CLG0,CLB0# 七彩灯亮红色
+// 	else if (InputString.indexOf("CLR") > 0)
+// 	{
+// 		int m_kp;
+// 		int i = InputString.indexOf("CLR");
+// 		int ii = InputString.indexOf(",", i);
+// 		if (ii > i)
+// 		{
+// 			String m_skp = InputString.substring(i + 3, ii);
+// 			int m_kp = m_skp.toInt();
+// 			//      Serial.print("CLR:");
+// 			//      Serial.println(m_kp);
+// 			red = m_kp;
+// 		}
+// 		i = InputString.indexOf("CLG");
+// 		ii = InputString.indexOf(",", i);
+// 		if (ii > i)
+// 		{
+// 			String m_skp = InputString.substring(i + 3, ii);
+// 			int m_kp = m_skp.toInt();
+// 			//      Serial.print("CLG:");
+// 			//      Serial.println(m_kp);
+// 			green = m_kp;
+// 		}
+// 		i = InputString.indexOf("CLB");
+// 		ii = InputString.indexOf("#", i);
+// 		if (ii > i)
+// 		{
+// 			String m_skp = InputString.substring(i + 3, ii);
+// 			int m_kp = m_skp.toInt();
+// 			//      Serial.print("CLB:");
+// 			//      Serial.println(m_kp);
+// 			blue = m_kp;
+// 			color_led_pwm(red, green, blue); //点亮相应颜色的灯
+// 			InputString = "";				 //清空串口数据
+// 			NewLineReceived = false;
+// 			return;
+// 		}
+// 	}
+// 	//解析上位机发来的通用协议指令,并执行相应的动作
+// 	//如:$1,0,0,0,0,0,0,0,0,0#    小车前进
+// 	if (InputString.indexOf("4WD") == -1)
+// 	{
+// 		//小车原地左旋右旋判断
+// 		if (InputString[3] == '1') //小车原地左旋
+// 		{
+// 			g_CarState = enTLEFT;
+// 		}
+// 		else if (InputString[3] == '2') //小车原地右旋
+// 		{
+// 			g_CarState = enTRIGHT;
+// 		}
+// 		else
+// 		{
+// 			g_CarState = enSTOP;
+// 		}
+
+// 		//小车鸣笛判断
+// 		if (InputString[5] == '1') //鸣笛
+// 		{
+// 			whistle();
+// 		}
+
+// 		//小车加减速判断
+// 		if (InputString[7] == '1') //加速，每次加50
+// 		{
+// 			CarSpeedControl += 50;
+// 			if (CarSpeedControl > 255)
+// 			{
+// 				CarSpeedControl = 255;
+// 			}
+// 		}
+// 		if (InputString[7] == '2') //减速，每次减50
+// 		{
+// 			CarSpeedControl -= 50;
+// 			if (CarSpeedControl < 50)
+// 			{
+// 				CarSpeedControl = 100;
+// 			}
+// 		}
+
+// 		//舵机左旋右旋判断
+// 		if (InputString[9] == '1') //舵机旋转到180度
+// 		{
+// 			servo_appointed_detection(180);
+// 		}
+// 		if (InputString[9] == '2') //舵机旋转到0度
+// 		{
+// 			servo_appointed_detection(0);
+// 		}
+
+// 		//点灯判断
+// 		switch (InputString[13])
+// 		{
+// 		case '1':
+// 			corlor_led(ON, ON, ON);
+// 			break;
+// 		case '2':
+// 			corlor_led(ON, OFF, OFF);
+// 			break;
+// 		case '3':
+// 			corlor_led(OFF, ON, OFF);
+// 			break;
+// 		case '4':
+// 			corlor_led(OFF, OFF, ON);
+// 			break;
+// 		case '5':
+// 			corlor_led(OFF, ON, ON);
+// 			break;
+// 		case '6':
+// 			corlor_led(ON, OFF, ON);
+// 			break;
+// 		case '7':
+// 			corlor_led(ON, ON, OFF);
+// 			break;
+// 		case '8':
+// 			corlor_led(OFF, OFF, OFF);
+// 			break;
+// 		}
+
+// 		//灭火判断
+// 		if (InputString[15] == '1') //灭火
+// 		{
+// 			pinMode(OutfirePin, OUTPUT);
+// 			digitalWrite(OutfirePin, LOW);
+// 			g_motor = true;
+// 		}
+// 		else if (InputString[15] == '0') //灭火
+// 		{
+// 			pinMode(OutfirePin, OUTPUT);
+// 			digitalWrite(OutfirePin, HIGH);
+// 			g_motor = false;
+// 		}
+
+// 		//舵机归为判断
+// 		if (InputString[17] == '1') //舵机旋转到90度
+// 		{
+// 			servo_appointed_detection(90);
+// 		}
+
+// 		//小车的前进,后退,左转,右转,停止动作
+// 		if (g_CarState != enTLEFT && g_CarState != enTRIGHT)
+// 		{
+// 			switch (InputString[1])
+// 			{
+// 			case run_car:
+// 				g_CarState = enRUN;
+// 				break;
+// 			case back_car:
+// 				g_CarState = enBACK;
+// 				break;
+// 			case left_car:
+// 				g_CarState = enLEFT;
+// 				break;
+// 			case right_car:
+// 				g_CarState = enRIGHT;
+// 				break;
+// 			case stop_car:
+// 				g_CarState = enSTOP;
+// 				break;
+// 			default:
+// 				g_CarState = enSTOP;
+// 				break;
+// 			}
+// 		}
+
+// 		InputString = ""; //清空串口数据
+// 		NewLineReceived = false;
+
+// 		//根据小车状态做相应的动作
+// 		switch (g_CarState)
+// 		{
+// 		case enSTOP:
+// 			brake();
+// 			break;
+// 		case enRUN:
+// 			run();
+// 			break;
+// 		case enLEFT:
+// 			left();
+// 			break;
+// 		case enRIGHT:
+// 			right();
+// 			break;
+// 		case enBACK:
+// 			back();
+// 			break;
+// 		case enTLEFT:
+// 			spin_left();
+// 			break;
+// 		case enTRIGHT:
+// 			spin_right();
+// 			break;
+// 		default:
+// 			brake();
+// 			break;
+// 		}
+// 	}
+// }
+
+// /**
+// * Function       serial_data_postback
+// * @author        Danny
+// * @date          2017.07.25
+// * @brief         将采集的传感器数据通过串口传输给上位机显示
+// * @param[in]     void
+// * @retval        void
+// * @par History   无
+// */
+// void serial_data_postback()
+// {
+// 	//小车超声波传感器采集的信息发给上位机显示
+// 	//打包格式如:
+// 	//    超声波 电压  灰度  巡线  红外避障 寻光
+// 	//$4WD,CSB120,PV8.3,GS214,LF1011,HW11,GM11#
+// 	//超声波
+// 	Distance_test();
+// 	ReturnTemp = "$4WD,CSB";
+// 	ReturnTemp.concat(distance);
+// 	//电压
+// 	ReturnTemp += ",PV";
+// 	//voltage_test();
+// 	ReturnTemp.concat(voltage_test());
+// 	//灰度
+// 	ReturnTemp += ",GS";
+// 	ReturnTemp.concat(color_test());
+// 	//巡线
+// 	ReturnTemp += ",LF";
+// 	track_test();
+// 	ReturnTemp.concat(infrared_track_value);
+// 	//红外避障
+// 	ReturnTemp += ",HW";
+// 	infrared_avoid_test();
+// 	ReturnTemp.concat(infrared_avoid_value);
+// 	//寻光
+// 	ReturnTemp += ",GM";
+// 	follow_light_test();
+// 	ReturnTemp.concat(LDR_value);
+// 	ReturnTemp += "#";
+// 	Serial.print(ReturnTemp);
+// 	return;
+// }
+
+// /**
+// * Function       serialEvent
+// * @author        Danny
+// * @date          2017.07.25
+// * @brief         串口解包
+// * @param[in]     void
+// * @param[out]    void
+// * @retval        void
+// * @par History   无
+// */
+
+// void serialEvent()
+// {
+// 	while (Serial.available())
+// 	{
+// 		//一个字节一个字节地读,下一句是读到的放入字符串数组中组成一个完成的数据包
+// 		IncomingByte = Serial.read();
+// 		if (IncomingByte == '$')
+// 		{
+// 			StartBit = true;
+// 		}
+// 		if (StartBit == true)
+// 		{
+// 			InputString += (char)IncomingByte;
+// 		}
+// 		if (IncomingByte == '#')
+// 		{
+// 			NewLineReceived = true;
+// 			StartBit = false;
+// 		}
+// 	}
+// }
