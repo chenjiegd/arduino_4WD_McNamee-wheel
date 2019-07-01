@@ -179,7 +179,7 @@ void setup()
 	// pinMode(OutfirePin, OUTPUT);
 	// digitalWrite(OutfirePin, HIGH);
 
-	randomSeed(analogRead(0)); //设置一个随机数产生源模拟口 0
+	randomSeed(analogRead(2)); //设置一个随机数产生源模拟口0
 
 	// by default, we'll generate the high voltage from the 3.3v line internally! (neat!)
 	display.begin(SSD1306_SWITCHCAPVCC, 0x3C); // initialize with the I2C addr 0x3C (for the 128x32)
