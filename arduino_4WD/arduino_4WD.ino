@@ -726,7 +726,7 @@ void Servo270(int num, int degree)
 
 // you can use this function if you'd like to set the pulse length in seconds
 // e.g. setServoPulse(0, 0.001) is a ~1 millisecond pulse width. its not precise!
-void setServoPulse(uint8_t n, double pulse)
+void setServoPulse(int num, double pulse)
 {
 	double pulselength;
 
@@ -735,7 +735,7 @@ void setServoPulse(uint8_t n, double pulse)
 	pulselength /= 4096;   // 12 bits of resolution
 	pulse *= 1000;
 	pulse /= pulselength;
-	pwm.setPWM(n, 0, pulse);
+	pwm.setPWM(enServo[num - 1], 0, pulse);
 }
 
 /**
