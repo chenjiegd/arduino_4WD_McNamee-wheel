@@ -101,6 +101,44 @@ long flag_seven = 0xFF18E7;		 //7
 long flag_eight = 0xFF9867;		 //8
 long flag_nine = 0xFF58A7;		 //9
 
+//循迹红外引脚定义
+//TrackSensorLeftPin1 TrackSensorLeftPin2 TrackSensorRightPin1 TrackSensorRightPin2
+//      A2                  A1                  A3                   A4
+const int TrackSensorLeftPin1 = A2;  //定义左边第一个循迹红外传感器引脚为A2
+const int TrackSensorLeftPin2 = A1;  //定义左边第二个循迹红外传感器引脚为A1
+const int TrackSensorRightPin1 = A3; //定义右边第一个循迹红外传感器引脚为A3
+const int TrackSensorRightPin2 = A4; //定义右边第二个循迹红外传感器引脚为A4
+
+//定义各个循迹红外引脚采集的数据的变量
+bool TrackSensorLeftValue1;
+bool TrackSensorLeftValue2;
+bool TrackSensorRightValue1;
+bool TrackSensorRightValue2;
+
+String infrared_track_value = "0000";
+
+/*避障红外传感器引脚及变量设置*/
+const int AvoidSensorLeft = A3;   //定义左边避障的红外传感器引脚为A3
+const int AvoidSensorRight = A1;  //定义右边避障的红外传感器引脚为A1
+const int FollowSensorLeft = A3;  //定义左边跟随的红外传感器引脚为A3
+const int FollowSensorRight = A1; //定义右边跟随的红外传感器引脚为A1
+
+int LeftSensorValue; //定义变量来保存红外传感器采集的数据大小
+int RightSensorValue;
+String infrared_avoid_value = "00";
+
+/*定义光敏电阻引脚及变量设置*/
+const int LdrSensorLeft = A4;  //定义左边光敏电阻引脚为A4
+const int LdrSensorRight = A2; //定义右边光敏电阻引脚为A2
+
+int LdrSersorLeftValue; //定义变量来保存光敏电阻采集的数据大小
+int LdrSersorRightValue;
+String LDR_value = "00";
+
+/*电压引脚及其变量设置*/
+int VoltagePin = A0;
+int VoltageValue = 0;
+
 /*小车初始速度控制*/
 int CarSpeed = 200;
 int distance = 0;
@@ -160,6 +198,17 @@ void setup()
 	//初始化超声波引脚
 	pinMode(Echo, INPUT);  // 定义超声波输入脚
 	pinMode(Trig, OUTPUT); // 定义超声波输出脚
+						   //定义四路循迹红外传感器为输入接口
+	pinMode(TrackSensorLeftPin1, INPUT);
+	pinMode(TrackSensorLeftPin2, INPUT);
+	pinMode(TrackSensorRightPin1, INPUT);
+	pinMode(TrackSensorRightPin2, INPUT);
+
+	//定义红外寻光管脚为输入模式
+	pinMode(AvoidSensorLeft, INPUT);
+	pinMode(AvoidSensorRight, INPUT);
+	pinMode(FollowSensorLeft, INPUT);
+	pinMode(FollowSensorRight, INPUT);
 	//定义左右光敏电阻传感器为输入接口
 	pinMode(LdrSensorLeft, INPUT);
 	pinMode(LdrSensorRight, INPUT);
@@ -169,7 +218,7 @@ void setup()
 	pinMode(LED, OUTPUT);
 	brake();
 	// keysacn();
-	all_RGB(0,80,80);
+	all_RGB(0, 80, 80);
 }
 
 void loop()
@@ -1390,3 +1439,32 @@ void breathing_light_RGB(int brightness, int time, int increament)
 // 		}
 // 	}
 // }
+
+/**
+* Function       bubble
+* @author        Danny
+* @date          2017.07.26
+* @brief         超声波测五次的数据进行冒泡排序
+* @param[in1]    a:超声波数组首地址
+* @param[in2]    n:超声波数组大小
+* @param[out]    void
+* @retval        void
+* @par History   无
+*/
+void bubble(unsigned long *a, int n)
+
+{
+  int i, j, temp;
+  for (i = 0; i < n - 1; i++)
+  {
+    for (j = i + 1; j < n; j++)
+    {
+      if (a[i] > a[j])
+      {
+        temp = a[i];
+        a[i] = a[j];
+        a[j] = temp;
+      }
+    }
+  }
+}
