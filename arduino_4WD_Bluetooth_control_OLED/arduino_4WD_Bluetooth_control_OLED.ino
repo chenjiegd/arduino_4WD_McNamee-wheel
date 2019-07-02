@@ -1,6 +1,6 @@
 /**
 * @par Copyright (C): 2010-2019, Shenzhen Yahboom Tech
-* @file         arduino_4WD_Bluetooth_control_OLED
+* @file         arduino_4WD_McNamee-wheel_Bluetooth_control_OLED
 * @author       wusicaijuan
 * @version      V1.0
 * @date         2019.07.01
@@ -27,13 +27,8 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(MAX_LED, PIN, NEO_RGB + NEO_KHZ800);
 #define OLED_RESET 4
 Adafruit_SSD1306 display(OLED_RESET);
 
-#define NUMFLAKES 10
-#define XPOS 0
-#define YPOS 1
-#define DELTAY 2
-
-#define LOGO16_GLCD_HEIGHT 16
-#define LOGO16_GLCD_WIDTH 16
+#define LOGO16_GLCD_HEIGHT 32
+#define LOGO16_GLCD_WIDTH 128
 
 #if (SSD1306_LCDHEIGHT != 32)
 #error("Height incorrect, please fix Adafruit_SSD1306.h!");
@@ -195,6 +190,7 @@ void setup()
 	// display.clearDisplay(); // clears the screen and buffer
 
 	welcome();
+	delay(3000);
 }
 
 /**
@@ -713,8 +709,8 @@ void Tracking_Mode()
 /*模式3:超声波避障模式*/
 /**
 * Function       servo_color_carstate
-* @author        wusicaijuan
-* @date          2019.07.02
+* @author        Danny
+* @date          2017.07.26
 * @brief         舵机转向超声波测距避障行驶,led根据车的状态显示相应的颜色
 * @param[in]     void
 * @param[out]    void
@@ -1058,27 +1054,35 @@ void serial_data_parse()
 			{
 			case '0':
 				g_modeSelect = 0;
+				Controling();
 				break;
 			case '1':
 				g_modeSelect = 1;
+				Controling();
 				break;
 			case '2':
 				g_modeSelect = 2;
+				Tracking();
 				break;
 			case '3':
 				g_modeSelect = 3;
+				Avoiding();
 				break;
 			case '4':
 				g_modeSelect = 4;
+				Colorful_searchlight();
 				break;
 			case '5':
 				g_modeSelect = 5;
+				Seeking_light();
 				break;
 			case '6':
 				g_modeSelect = 6;
+				Following();
 				break;
 			default:
 				g_modeSelect = 0;
+				Controling();
 				break;
 			}
 			delay(1000);
@@ -1413,18 +1417,23 @@ void loop()
 	case 1:
 		break; //暂时保留
 	case 2:
+		// Tracking();
 		Tracking_Mode();
 		break; //巡线模式
 	case 3:
+		// Avoiding();
 		Ultrasonic_avoidMode();
 		break; //超声波避障模式
 	case 4:
+		// Colorful_searchlight();
 		FindColor_Mode();
 		break; //七彩颜色识别模式
 	case 5:
+		// Seeking_light();
 		LightSeeking_Mode();
 		break; //寻光模式
 	case 6:
+		// Following();
 		Ir_flow_Mode();
 		break; //跟随模式
 	}
@@ -1440,7 +1449,7 @@ void loop()
 			time = 20000;
 			if (count == 0)
 			{
-
+				Controling();
 				serial_data_postback();
 				time = 20000;
 				count = 10;
@@ -1495,5 +1504,127 @@ void welcome()
 	display.clearDisplay();
 	display.println("Welcome!");
 	display.println("Hola,Maker");
+	display.display();
+}
+
+/*
+* Function       Tracking
+* @author        wusicaijuan
+* @date          2019.07.01
+* @brief         巡迹模式
+* @param[in]     void
+* @param[out]    void
+* @retval        void
+* @par History   无
+*/
+void Tracking()
+{
+	display.setTextSize(2);
+	display.setTextColor(WHITE);
+	display.setCursor(0, 0);
+	display.clearDisplay();
+	display.println("Tracking!");
+	display.display();
+}
+
+/*
+* Function       Avoiding
+* @author        wusicaijuan
+* @date          2019.07.01
+* @brief         避障模式
+* @param[in]     void
+* @param[out]    void
+* @retval        void
+* @par History   无
+*/
+void Avoiding()
+{
+	display.setTextSize(2);
+	display.setTextColor(WHITE);
+	display.setCursor(0, 0);
+	display.clearDisplay();
+	display.println("Avoiding!");
+	display.display();
+}
+
+/*
+* Function       Colorful_searchlight
+* @author        wusicaijuan
+* @date          2019.07.01
+* @brief         七彩探照
+* @param[in]     void
+* @param[out]    void
+* @retval        void
+* @par History   无
+*/
+void Colorful_searchlight()
+{
+	display.setTextSize(2);
+	display.setTextColor(WHITE);
+	display.setCursor(0, 0);
+	display.clearDisplay();
+	display.println("Colorful");
+	display.println("searchLED!");
+	display.display();
+}
+
+/*
+* Function       Seeking_light
+* @author        wusicaijuan
+* @date          2019.07.01
+* @brief         寻光模式
+* @param[in]     void
+* @param[out]    void
+* @retval        void
+* @par History   无
+*/
+void Seeking_light()
+{
+	display.setTextSize(2);
+	display.setTextColor(WHITE);
+	display.setCursor(0, 0);
+	display.clearDisplay();
+	display.println("Seeking");
+	display.println("light!");
+	display.display();
+}
+
+/*
+* Function       Following
+* @author        wusicaijuan
+* @date          2019.07.01
+* @brief         跟随模式
+* @param[in]     void
+* @param[out]    void
+* @retval        void
+* @par History   无
+*/
+void Following()
+{
+	display.setTextSize(2);
+	display.setTextColor(WHITE);
+	display.setCursor(0, 0);
+	display.clearDisplay();
+	display.println("Following!");
+	display.display();
+}
+
+/*
+* Function       Controling
+* @author        wusicaijuan
+* @date          2019.07.01
+* @brief         控制模式
+* @param[in]     void
+* @param[out]    void
+* @retval        void
+* @par History   无
+*/
+void Controling()
+{
+	display.setTextSize(2);
+	display.setTextColor(WHITE);
+	display.setCursor(0, 0);
+	display.clearDisplay();
+	display.println("Remoting!");
 	display.display();
 }
