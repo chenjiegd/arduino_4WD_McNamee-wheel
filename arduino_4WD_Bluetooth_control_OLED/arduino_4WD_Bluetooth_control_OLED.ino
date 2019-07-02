@@ -20,8 +20,8 @@ Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver(0x40);
 #define SERVOMIN 150 // this is the 'minimum' pulse length count (out of 4096)
 #define SERVOMAX 600 // this is the 'maximum' pulse length count (out of 4096)
 
-#define PIN 6	 	//定义RGB灯的引脚
-#define MAX_LED 1 	//小车一共有1个RGB灯
+#define PIN 6	 //定义RGB灯的引脚
+#define MAX_LED 1 //小车一共有1个RGB灯
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(MAX_LED, PIN, NEO_RGB + NEO_KHZ800);
 
 #define OLED_RESET 4
@@ -186,8 +186,6 @@ void setup()
 	//初始化超声波引脚模式
 	pinMode(EchoPin, INPUT);  //定义超声波输入脚
 	pinMode(TrigPin, OUTPUT); //定义超声波输出脚
-
-	randomSeed(analogRead(2)); //设置一个随机数产生源模拟口0
 
 	// by default, we'll generate the high voltage from the 3.3v line internally! (neat!)
 	display.begin(SSD1306_SWITCHCAPVCC, 0x3C); // initialize with the I2C addr 0x3C (for the 128x32)
@@ -715,8 +713,8 @@ void Tracking_Mode()
 /*模式3:超声波避障模式*/
 /**
 * Function       servo_color_carstate
-* @author        Danny
-* @date          2017.07.26
+* @author        wusicaijuan
+* @date          2019.07.02
 * @brief         舵机转向超声波测距避障行驶,led根据车的状态显示相应的颜色
 * @param[in]     void
 * @param[out]    void
