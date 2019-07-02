@@ -452,12 +452,12 @@ void left(int Speed)
 	Speed = map(Speed, 0, 255, 0, 4095);
 	pwm.setPWM(10, 0, Speed);
 	pwm.setPWM(11, 0, 0);
-	pwm.setPWM(8, 0, Speed);
-	pwm.setPWM(9, 0, 0);
+	pwm.setPWM(8, 0, 0);
+	pwm.setPWM(9, 0, Speed);
 
 	pwm.setPWM(13, 0, 0);
-	pwm.setPWM(12, 0, 0);
-	pwm.setPWM(15, 0, 0);
+	pwm.setPWM(12, 0, Speed);
+	pwm.setPWM(15, 0, Speed);
 	pwm.setPWM(14, 0, 0);
 }
 
@@ -475,14 +475,14 @@ void right(int Speed)
 {
 	Speed = map(Speed, 0, 255, 0, 4095);
 	pwm.setPWM(10, 0, 0);
-	pwm.setPWM(11, 0, 0);
-	pwm.setPWM(8, 0, 0);
+	pwm.setPWM(11, 0, Speed);
+	pwm.setPWM(8, 0, Speed);
 	pwm.setPWM(9, 0, 0);
 
 	pwm.setPWM(13, 0, Speed);
 	pwm.setPWM(12, 0, 0);
-	pwm.setPWM(15, 0, Speed);
-	pwm.setPWM(14, 0, 0);
+	pwm.setPWM(15, 0, 0);
+	pwm.setPWM(14, 0, Speed);
 }
 
 /**
