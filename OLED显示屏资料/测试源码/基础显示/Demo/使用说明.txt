@@ -1,0 +1,15 @@
+Adafruit_GFX和Adafruit_SSD1306这两个文件夹是库文件，请将其放入"libraries"文件夹内；
+
+Demo.ino为演示程序，正确接线并下载到Arduino板子上即可。
+
+
+0.96寸SPI接口arduino接线方式：
+
+OLED屏	arduino开发板
+GND	GND
+VCC	3.3V 或5V
+SCL	10
+SDA	9
+RES	13
+DC	11
+CS	12   七针模块有cs脚；直接连接就好了；如果是用六针的CS默认已经接地；不接就可以了

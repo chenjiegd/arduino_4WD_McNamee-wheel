@@ -925,7 +925,7 @@ void Ultrasonic_avoidMode()
 
 void FindColor_Mode()
 {
-	for (; position < 180; position += 10)
+	for (position = 0; position < 180; position += 10)
 	{
 		Servo180(1, position);
 		setRGB(random(0, 255), random(0, 255), random(0, 255));

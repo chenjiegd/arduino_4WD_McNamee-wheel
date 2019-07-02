@@ -123,9 +123,9 @@ void setup()   {
 	// display.clearDisplay();
 
 	// // draw scrolling text
-	testscrolltext();
-	delay(2000);
-	display.clearDisplay();
+	// testscrolltext();
+	// delay(2000);
+	// display.clearDisplay();
 
 	// // text display tests
 	// display.setTextSize(1);
@@ -141,9 +141,9 @@ void setup()   {
 	// delay(2000);
 
 	// // miniature bitmap display
-	// display.clearDisplay();
-	// display.drawBitmap(30, 16,  logo16_glcd_bmp, 16, 16, 1);
-	// display.display();
+	display.clearDisplay();
+	display.drawBitmap(30, 16,  logo16_glcd_bmp, 16, 16, 1);
+	display.display();
 
 	// // invert the display
 	// display.invertDisplay(true);
@@ -151,8 +151,8 @@ void setup()   {
 	// display.invertDisplay(false);
 	// delay(1000); 
 
-	// // draw a bitmap icon and 'animate' movement
-	// testdrawbitmap(logo16_glcd_bmp, LOGO16_GLCD_HEIGHT, LOGO16_GLCD_WIDTH);
+	// draw a bitmap icon and 'animate' movement
+	//testdrawbitmap(logo16_glcd_bmp, LOGO16_GLCD_HEIGHT, LOGO16_GLCD_WIDTH);
 }
 
 
