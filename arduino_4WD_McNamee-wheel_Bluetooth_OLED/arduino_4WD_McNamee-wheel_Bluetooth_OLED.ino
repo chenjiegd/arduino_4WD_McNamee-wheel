@@ -59,6 +59,8 @@ char enServo[] = {0, 1, 2, 3};
 
 int key = 7; //按键key
 
+int flag = 0;
+
 //循迹红外引脚定义
 //TrackSensorLeftPin1 TrackSensorLeftPin2 TrackSensorRightPin1 TrackSensorRightPin2
 //      A2                  A1                  A3                   A4
@@ -606,6 +608,26 @@ void setRGB(int R, int G, int B)
 	pwm.setPWM(5, 0, G);
 	pwm.setPWM(4, 0, B);
 }
+
+/**
+* Function       PCB_RGB(R,G,B)
+* @author        wusicaijuan
+* @date          2019.06.26
+* @brief         设置板载RGB灯
+* @param[in1]	 R
+* @param[in2]    G
+* @param[in3]    B
+* @param[out]    void
+* @retval        void
+* @par History   无
+*/
+void PCB_RGB(int R, int G, int B)
+{
+	uint8_t i = 0;
+	uint32_t color = strip.Color(G, R, B);
+	strip.setPixelColor(i, color);
+	strip.show();
+}
 /********************************************************************************************************/
 /*模式2 巡线*/
 /**
@@ -1043,6 +1065,7 @@ void serial_data_parse()
 	{
 		if (InputString[10] == '0') //停止模式
 		{
+			Controling();
 			brake();
 			g_CarState = enSTOP;
 			g_modeSelect = 0;
@@ -1408,6 +1431,10 @@ void loop()
 {
 	if (NewLineReceived)
 	{
+		if(flag == 0){
+			Controling();
+			flag = 1;
+		}
 		serial_data_parse(); //调用串口解析函数
 	}
 
@@ -1449,7 +1476,7 @@ void loop()
 			time = 20000;
 			if (count == 0)
 			{
-				Controling();
+				// Controling();
 				serial_data_postback();
 				time = 20000;
 				count = 10;
@@ -1498,6 +1525,7 @@ void keysacn()
 */
 void welcome()
 {
+	PCB_RGB(255, 0, 0);
 	display.setTextSize(2);
 	display.setTextColor(WHITE);
 	display.setCursor(0, 0);
@@ -1519,6 +1547,7 @@ void welcome()
 */
 void Tracking()
 {
+	PCB_RGB(0, 0, 255);
 	display.setTextSize(2);
 	display.setTextColor(WHITE);
 	display.setCursor(0, 0);
@@ -1539,6 +1568,7 @@ void Tracking()
 */
 void Avoiding()
 {
+	PCB_RGB(255, 255, 0);
 	display.setTextSize(2);
 	display.setTextColor(WHITE);
 	display.setCursor(0, 0);
@@ -1559,6 +1589,7 @@ void Avoiding()
 */
 void Colorful_searchlight()
 {
+	PCB_RGB(0, 255, 255);
 	display.setTextSize(2);
 	display.setTextColor(WHITE);
 	display.setCursor(0, 0);
@@ -1580,6 +1611,7 @@ void Colorful_searchlight()
 */
 void Seeking_light()
 {
+	PCB_RGB(255, 0, 255);
 	display.setTextSize(2);
 	display.setTextColor(WHITE);
 	display.setCursor(0, 0);
@@ -1601,6 +1633,7 @@ void Seeking_light()
 */
 void Following()
 {
+	PCB_RGB(64,224,205);
 	display.setTextSize(2);
 	display.setTextColor(WHITE);
 	display.setCursor(0, 0);
@@ -1621,6 +1654,7 @@ void Following()
 */
 void Controling()
 {
+	PCB_RGB(0, 255, 0);
 	display.setTextSize(2);
 	display.setTextColor(WHITE);
 	display.setCursor(0, 0);
