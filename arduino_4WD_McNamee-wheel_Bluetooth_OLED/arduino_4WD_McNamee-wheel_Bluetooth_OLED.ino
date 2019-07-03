@@ -157,12 +157,17 @@ void setup()
 	//串口波特率设置
 	Serial.begin(9600);
 	printf_begin();
+
+	strip.begin();
+	strip.show();
+	PCB_RGB_OFF();
+
 	//初始化电机驱动IO为输出方式
 	pwm.begin();
 	pwm.setPWMFreq(60); // Analog servos run at ~60 Hz updates
 
-	strip.begin();
-	strip.show();
+	// PCB_LED();
+	breathing_light(255, 40, 5);
 
 	//定义四路循迹红外传感器为输入接口
 	pinMode(TrackSensorLeftPin1, INPUT);
@@ -624,10 +629,77 @@ void setRGB(int R, int G, int B)
 void PCB_RGB(int R, int G, int B)
 {
 	uint8_t i = 0;
+	R = map(R, 0, 255, 0, 10);
+	G = map(G, 0, 255, 0, 10);
+	B = map(B, 0, 255, 0, 10);
 	uint32_t color = strip.Color(G, R, B);
 	strip.setPixelColor(i, color);
 	strip.show();
 }
+
+/**
+* Function       PCB_RGB(R,G,B)
+* @author        wusicaijuan
+* @date          2019.06.26
+* @brief         设置板载RGB灯
+* @param[in1]	 void
+* @param[out]    void
+* @retval        void
+* @par History   无
+*/
+void PCB_RGB_OFF()
+{
+	uint8_t i = 0;
+	uint32_t color = strip.Color(0, 0, 0);
+	strip.setPixelColor(i, color);
+	strip.show();
+}
+
+/**
+* Function       PCB_LED()
+* @author        wusicaijuan
+* @date          2019.07.03
+* @brief         设置板载LED灯
+* @param[in1]	 void
+* @param[out]    void
+* @retval        void
+* @par History   无
+*/
+void PCB_LED()
+{
+	pwm.setPWM(7, 0, 4095);
+}
+
+/**
+* Function       breathing_light(brightness,time,increament)
+* @author        wusicaijuan
+* @date          2019.06.26
+* @brief         呼吸灯
+* @param[in1]	 brightness
+* @param[in2]    time
+* @param[in3]    increament
+* @param[out]    void
+* @retval        void
+* @par History   无
+*/
+void breathing_light(int brightness, int time, int increament)
+{
+	if (brightness < 0)
+	{
+		brightness = 0;
+	}
+	if (brightness > 255)
+	{
+		brightness = 255;
+	}
+	for (int b = 0; b < brightness; b += increament)
+	{
+		int newb = map(b, 0, 255, 0, 4095);
+		pwm.setPWM(7, 0, newb);
+		delay(time);
+	}
+}
+
 /********************************************************************************************************/
 /*模式2 巡线*/
 /**
@@ -1318,22 +1390,22 @@ void serial_data_parse()
 			brake();
 			break;
 		case enRUN:
-			run(150);
+			run(CarSpeedControl);
 			break;
 		case enLEFT:
-			left(150);
+			left(CarSpeedControl);
 			break;
 		case enRIGHT:
-			right(150);
+			right(CarSpeedControl);
 			break;
 		case enBACK:
-			back(150);
+			back(CarSpeedControl);
 			break;
 		case enTLEFT:
-			spin_left(150);
+			spin_left(CarSpeedControl);
 			break;
 		case enTRIGHT:
-			spin_right(150);
+			spin_right(CarSpeedControl);
 			break;
 		default:
 			brake();
