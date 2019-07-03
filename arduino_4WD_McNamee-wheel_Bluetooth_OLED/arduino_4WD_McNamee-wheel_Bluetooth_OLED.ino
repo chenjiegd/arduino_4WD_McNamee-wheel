@@ -1431,7 +1431,8 @@ void loop()
 {
 	if (NewLineReceived)
 	{
-		if(flag == 0){
+		if (flag == 0)
+		{
 			Controling();
 			flag = 1;
 		}
@@ -1633,7 +1634,7 @@ void Seeking_light()
 */
 void Following()
 {
-	PCB_RGB(64,224,205);
+	PCB_RGB(64, 224, 205);
 	display.setTextSize(2);
 	display.setTextColor(WHITE);
 	display.setCursor(0, 0);
