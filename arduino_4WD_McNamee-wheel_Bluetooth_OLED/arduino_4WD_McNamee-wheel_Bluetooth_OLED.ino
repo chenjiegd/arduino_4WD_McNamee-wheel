@@ -820,8 +820,8 @@ void servo_color_carstate()
 	int FrontDistance = 0; //前方距离值变量FrontDistance
 	setRGB(255, 0, 0);
 	CarSpeedControl = 80;
-	back(150); //避免突然停止,刹不住车
-	delay(80);
+	// back(150); //避免突然停止,刹不住车
+	// delay(80);
 	brake();
 
 	//舵机旋转到0度,即右侧,测距
@@ -847,7 +847,7 @@ void servo_color_carstate()
 		//亮品红色,掉头
 		setRGB(255, 0, 0);
 		CarSpeedControl = 120;
-		spin_right(150);
+		spin_right(80);
 		delay(560);
 		brake();
 	}
@@ -856,7 +856,7 @@ void servo_color_carstate()
 		//亮蓝色
 		setRGB(0, 0, 255);
 		CarSpeedControl = 120;
-		spin_left(150);
+		spin_left(80);
 		delay(280);
 		brake();
 	}
@@ -865,7 +865,7 @@ void servo_color_carstate()
 		//亮品红色,向右转
 		setRGB(255, 0, 0);
 		CarSpeedControl = 120;
-		spin_right(150);
+		spin_right(80);
 		delay(280);
 		brake();
 	}
@@ -946,7 +946,7 @@ void Ultrasonic_avoidMode()
 {
 	Distance();		   //测量前方距离
 					   //printf("D:%d\r\n", (int)distance);
-	if (distance > 30) //障碍物距离大于50时，开启左右红外辅助避障
+	if (distance > 20) //障碍物距离大于50时，开启左右红外辅助避障
 	{
 		//遇到障碍物,红外避障模块的指示灯亮,端口电平为LOW
 		//未遇到障碍物,红外避障模块的指示灯灭,端口电平为HIGH
@@ -956,27 +956,27 @@ void Ultrasonic_avoidMode()
 		if (LeftSensorValue == HIGH && RightSensorValue == LOW)
 		{
 			CarSpeedControl = 120;
-			spin_left(150); //右边探测到有障碍物，有信号返回，原地向左转
+			spin_left(80); //右边探测到有障碍物，有信号返回，原地向左转
 			delay(200);
 		}
 		else if (RightSensorValue == HIGH && LeftSensorValue == LOW)
 		{
 			CarSpeedControl = 120;
-			spin_right(150); //左边探测到有障碍物，有信号返回，原地向右转
+			spin_right(80); //左边探测到有障碍物，有信号返回，原地向右转
 			delay(200);
 		}
 		else if (RightSensorValue == LOW && LeftSensorValue == LOW)
 		{
 			CarSpeedControl = 120;
-			spin_right(150); //当两侧均检测到障碍物时调用固定方向的避障(原地右转)
+			spin_right(80); //当两侧均检测到障碍物时调用固定方向的避障(原地右转)
 			delay(200);
 		}
 		//距离大于50时前进,亮绿灯
 		CarSpeedControl = 120;
-		run(150);
+		run(80);
 		setRGB(0, 255, 0);
 	}
-	else if ((distance >= 20 && distance <= 30))
+	else if ((distance >= 15 && distance <= 20))
 	{
 		//遇到障碍物,红外避障模块的指示灯亮,端口电平为LOW
 		//未遇到障碍物,红外避障模块的指示灯灭,端口电平为HIGH
@@ -986,26 +986,26 @@ void Ultrasonic_avoidMode()
 		if (LeftSensorValue == HIGH && RightSensorValue == LOW)
 		{
 			CarSpeedControl = 120;
-			spin_left(150); //右边探测到有障碍物，有信号返回，原地向左转
+			spin_left(80); //右边探测到有障碍物，有信号返回，原地向左转
 			delay(200);
 		}
 		else if (RightSensorValue == HIGH && LeftSensorValue == LOW)
 		{
 			CarSpeedControl = 120;
-			spin_right(150); //左边探测到有障碍物，有信号返回，原地向右转
+			spin_right(80); //左边探测到有障碍物，有信号返回，原地向右转
 			delay(200);
 		}
 		else if (RightSensorValue == LOW && LeftSensorValue == LOW)
 		{
 			CarSpeedControl = 120;
-			spin_right(150); //当两侧均检测到障碍物时调用固定方向的避障(原地右转)
+			spin_right(80); //当两侧均检测到障碍物时调用固定方向的避障(原地右转)
 			delay(200);
 		}
 		//距离在30-50之间时慢速前进
 		CarSpeedControl = 60;
-		run(150);
+		run(80);
 	}
-	else if (distance < 20) //当距离小于30时调用舵机颜色控制程序
+	else if (distance < 15) //当距离小于30时调用舵机颜色控制程序
 	{
 		servo_color_carstate();
 	}
