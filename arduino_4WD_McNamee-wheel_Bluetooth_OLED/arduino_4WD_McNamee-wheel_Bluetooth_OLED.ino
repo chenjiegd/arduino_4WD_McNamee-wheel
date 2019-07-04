@@ -258,7 +258,7 @@ float voltage_test()
 
 	//方法一:通过电路原理图和采集的A0口模拟值得到电压值
 	// Serial.println(VoltageValue);
-	VoltageValue = (VoltageValue / 1023) * 5.02 * 4.03  ;
+	VoltageValue = (VoltageValue / 1023) * 5.02 * 4.03;
 	return VoltageValue;
 	//Voltage是端口A0采集到的ad值（0-1023），
 	//1.75是（R14+R15）/R15的结果，其中R14=15K,R15=20K）。
@@ -948,7 +948,7 @@ void Distance()
 */
 void Ultrasonic_avoidMode()
 {
-	Distance();		   //测量前方距离
+	Distance(); //测量前方距离
 	// printf("D:%d\r\n", (int)distance);
 	if (distance > 20) //障碍物距离大于50时，开启左右红外辅助避障
 	{
@@ -997,15 +997,6 @@ void FindColor_Mode()
 		setRGB(random(0, 255), random(0, 255), random(0, 255));
 		delay(100);
 	}
-
-	// Servo180(1, position);
-	// setRGB( random(0,255), random(0,255), random(0,255));
-	// position += 10;
-	// delay(100);
-	// if(position > 180)
-	// {
-	// 	position = 0;
-	// }
 }
 
 /********************************************************************************************************/
@@ -1016,19 +1007,6 @@ void LightSeeking_Mode()
 	//未遇光线,寻光模块的指示灯亮,端口电平为LOW
 	LdrSersorRightValue = digitalRead(LdrSensorRight);
 	LdrSersorLeftValue = digitalRead(LdrSensorLeft);
-	time--;
-	if (time == 0)
-	{
-		count--;
-		time = 2000;
-		if (count == 0)
-		{
-			printf("$4WD,CSB120,PV8.3,GS000,LF0000,HW00,GM%d%d#", LdrSersorLeftValue, LdrSersorRightValue);
-			time = 2000;
-			count = 1;
-		}
-	}
-
 	if (LdrSersorLeftValue == HIGH && LdrSersorRightValue == HIGH)
 	{
 		run(60); //两侧均有光时信号为HIGH，光敏电阻指示灯灭,小车前进
@@ -1045,6 +1023,18 @@ void LightSeeking_Mode()
 	{
 		brake(); //均无光，停止
 	}
+	time--;
+	if (time == 0)
+	{
+		count--;
+		time = 2000;
+		if (count == 0)
+		{
+			printf("$4WD,CSB120,PV8.3,GS000,LF0000,HW00,GM%d%d#", LdrSersorLeftValue, LdrSersorRightValue);
+			time = 2000;
+			count = 1;
+		}
+	}
 }
 /********************************************************************************************************/
 /*模式6: 红外跟随模式*/
@@ -1055,6 +1045,22 @@ void Ir_flow_Mode()
 	//未遇到跟随物,红外跟随模块的指示灯灭,端口电平为HIGH
 	LeftSensorValue = digitalRead(FollowSensorLeft);
 	RightSensorValue = digitalRead(FollowSensorRight);
+	if (LeftSensorValue == LOW && RightSensorValue == LOW)
+	{
+		run(60); //当两侧均检测到跟随物时调用前进函数
+	}
+	else if (LeftSensorValue == LOW && RightSensorValue == HIGH)
+	{
+		spin_left(80); //左边探测到有跟随物，有信号返回，原地向左转
+	}
+	else if (RightSensorValue == LOW && LeftSensorValue == HIGH)
+	{
+		spin_right(80); //右边探测到有跟随物，有信号返回，原地向右转
+	}
+	else
+	{
+		brake(); //当两侧均未检测到跟随物时停止
+	}
 	time--;
 	if (time == 0)
 	{
@@ -1066,23 +1072,6 @@ void Ir_flow_Mode()
 			time = 2000;
 			count = 1;
 		}
-	}
-
-	if (LeftSensorValue == LOW && RightSensorValue == LOW)
-	{
-		run(150); //当两侧均检测到跟随物时调用前进函数
-	}
-	else if (LeftSensorValue == LOW && RightSensorValue == HIGH)
-	{
-		spin_left(150); //左边探测到有跟随物，有信号返回，原地向左转
-	}
-	else if (RightSensorValue == LOW && LeftSensorValue == HIGH)
-	{
-		spin_right(150); //右边探测到有跟随物，有信号返回，原地向右转
-	}
-	else
-	{
-		brake(); //当两侧均未检测到跟随物时停止
 	}
 }
 
