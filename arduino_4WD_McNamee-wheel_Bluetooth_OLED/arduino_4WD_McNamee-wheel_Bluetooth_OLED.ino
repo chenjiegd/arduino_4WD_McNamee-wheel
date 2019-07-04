@@ -1635,8 +1635,7 @@ void Colorful_searchlight()
 	display.setTextColor(WHITE);
 	display.setCursor(0, 0);
 	display.clearDisplay();
-	display.println("Colorful");
-	display.println("searchLED!");
+	display.println("Colorful!");
 	display.display();
 }
 
@@ -1657,8 +1656,7 @@ void Seeking_light()
 	display.setTextColor(WHITE);
 	display.setCursor(0, 0);
 	display.clearDisplay();
-	display.println("Seeking");
-	display.println("light!");
+	display.println("Seeking!");
 	display.display();
 }
 
