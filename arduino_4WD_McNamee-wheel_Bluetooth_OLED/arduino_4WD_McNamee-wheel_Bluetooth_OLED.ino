@@ -55,9 +55,9 @@ enum
 	enTRIGHT
 } enCarState;
 
-char enServo[] = {0, 1, 2, 3};
+const char enServo[] = {0, 1, 2, 3};
 
-int key = 7; //按键key
+const int key = 7; //按键key
 
 int flag = 0;
 
@@ -98,15 +98,15 @@ String LDR_value = "00";
 double position = 0; //七彩探照
 
 /*电压引脚及其变量设置*/
-int VoltagePin = A2;
-int VoltageValue = 0;
+const int VoltagePin = A2;
+double VoltageValue = 0;
 
 /*小车初始速度控制*/
 int CarSpeedControl = 150;
 
 /*超声波引脚及变量设置*/
-int EchoPin = 13; //Echo回声脚
-int TrigPin = 12; //Trig触发脚
+const int EchoPin = 13; //Echo回声脚
+const int TrigPin = 12; //Trig触发脚
 float distance = 0;
 
 /*颜色值*/
@@ -128,7 +128,7 @@ int g_modeSelect = 0;	//0是默认状态;  1:红外遥控 2:巡线模式 3:超�
 boolean g_motor = false;
 
 /*电压检测查表法定义数组(电压值,A0端口读到的模拟值)*/
-float voltage_table[21][2] =
+const float voltage_table[21][2] =
 	{
 		{6.46, 676}, {6.51, 678}, {6.61, 683}, {6.72, 687}, {6.82, 691}, {6.91, 695}, {7.01, 700}, {7.11, 703}, {7.20, 707}, {7.31, 712}, {7.4, 715}, {7.5, 719}, {7.6, 723}, {7.7, 728}, {7.81, 733}, {7.91, 740}, {8.02, 741}, {8.1, 745}, {8.22, 749}, {8.30, 753}, {8.4, 758}};
 
@@ -165,9 +165,25 @@ void setup()
 	//初始化电机驱动IO为输出方式
 	pwm.begin();
 	pwm.setPWMFreq(60); // Analog servos run at ~60 Hz updates
+	//电机驱动
+	pwm.setPWM(8, 0, 0);
+	pwm.setPWM(9, 0, 0);
+	pwm.setPWM(11, 0, 0);
+	pwm.setPWM(10, 0, 0);
+
+	pwm.setPWM(12, 0, 0);
+	pwm.setPWM(13, 0, 0);
+	pwm.setPWM(14, 0, 0);
+	pwm.setPWM(15, 0, 0);
+	//外接RGB
+	pwm.setPWM(6, 0, 0);
+	pwm.setPWM(5, 0, 0);
+	pwm.setPWM(4, 0, 0);
 
 	// PCB_LED();
 	breathing_light(255, 40, 5);
+
+	pinMode(VoltagePin, INPUT);
 
 	//定义四路循迹红外传感器为输入接口
 	pinMode(TrackSensorLeftPin1, INPUT);
@@ -223,7 +239,7 @@ void Distance_test()
 	//  Serial.print(Fdistance);              //显示距离
 	//  Serial.println("cm");
 	distance = Fdistance;
-	return;
+	// return;
 }
 
 /**
@@ -238,44 +254,44 @@ void Distance_test()
 */
 float voltage_test()
 {
-	pinMode(VoltagePin, INPUT);			   //电压检测引脚和蜂鸣器引脚A5调整引脚模式来分时复用
 	VoltageValue = analogRead(VoltagePin); //读取A0口值,换算为电压值
 
 	//方法一:通过电路原理图和采集的A0口模拟值得到电压值
-	//Serial.println(VoltageValue);
-	//VoltageValue = (VoltageValue / 1023) * 5.02 * 1.75  ;
+	// Serial.println(VoltageValue);
+	VoltageValue = (VoltageValue / 1023) * 5.02 * 4.03  ;
+	return VoltageValue;
 	//Voltage是端口A0采集到的ad值（0-1023），
 	//1.75是（R14+R15）/R15的结果，其中R14=15K,R15=20K）。
 
 	/*查表记录打开*/
-	//  float voltage = 0;
-	//  voltage = VoltageValue;
-	//  return voltage;
+	// float voltage = 0;
+	// voltage = VoltageValue;
+	// return voltage;
 
 	//方法二:通过提前测量6.4-8.4v所对应的A0口模拟值,再通过查表法确定其值
 	//       这种方法的误差小于0.1v
-	int i = 0;
-	float voltage = 0;
-	if (VoltageValue > voltage_table[20][1])
-	{
-		voltage = 8.4;
-		return voltage;
-	}
-	if (VoltageValue < voltage_table[0][1])
-	{
-		voltage = 6.4;
-		return voltage;
-	}
-	for (i = 0; i < 20; i++)
-	{
-		if (VoltageValue >= voltage_table[i][1] && VoltageValue <= voltage_table[i + 1][1])
-		{
-			voltage = voltage_table[i][0] + (VoltageValue - voltage_table[i][1]) * ((voltage_table[i + 1][0] - voltage_table[i][0]) / (voltage_table[i + 1][1] - voltage_table[i][1]));
-			return voltage;
-		}
-	}
-	pinMode(VoltagePin, OUTPUT);
+	// int i = 0;
+	// float voltage = 0;
+	// if (VoltageValue > voltage_table[20][1])
+	// {
+	// 	voltage = 8.4;
+	// 	return voltage;
+	// }
+	// if (VoltageValue < voltage_table[0][1])
+	// {
+	// 	voltage = 6.4;
+	// 	return voltage;
+	// }
+	// for (i = 0; i < 20; i++)
+	// {
+	// 	if (VoltageValue >= voltage_table[i][1] && VoltageValue <= voltage_table[i + 1][1])
+	// 	{
+	// 		voltage = voltage_table[i][0] + (VoltageValue - voltage_table[i][1]) * ((voltage_table[i + 1][0] - voltage_table[i][0]) / (voltage_table[i + 1][1] - voltage_table[i][1]));
+	// 		return voltage;
+	// 	}
+	// }
 	return 0;
+	// return;
 }
 
 /**
@@ -814,12 +830,10 @@ void Tracking_Mode()
 void servo_color_carstate()
 {
 	//定义舵机位置变量和小车前方,左侧,右侧距离
-	int iServoPos = 0;
 	int LeftDistance = 0;  //左方距离值变量LeftDistance
 	int RightDistance = 0; //右方距离值变量RightDistance
 	int FrontDistance = 0; //前方距离值变量FrontDistance
 	setRGB(255, 0, 0);
-	CarSpeedControl = 80;
 	// back(150); //避免突然停止,刹不住车
 	// delay(80);
 	brake();
@@ -846,27 +860,24 @@ void servo_color_carstate()
 	{
 		//亮品红色,掉头
 		setRGB(255, 0, 0);
-		CarSpeedControl = 120;
 		spin_right(80);
-		delay(560);
+		delay(1000);
 		brake();
 	}
 	else if (LeftDistance >= RightDistance) //当发现左侧距离大于右侧，原地左转
 	{
 		//亮蓝色
 		setRGB(0, 0, 255);
-		CarSpeedControl = 120;
 		spin_left(80);
-		delay(280);
+		delay(600);
 		brake();
 	}
 	else if (LeftDistance < RightDistance) //当发现右侧距离大于左侧，原地右转
 	{
 		//亮品红色,向右转
 		setRGB(255, 0, 0);
-		CarSpeedControl = 120;
 		spin_right(80);
-		delay(280);
+		delay(600);
 		brake();
 	}
 }
@@ -917,13 +928,13 @@ void Distance()
 	{
 		Distance_test();
 		//过滤掉测试距离中出现的错误数据大于500,或者distance==0
-		while (distance >= 500 || distance == 0)
+		while (distance >= 600 || distance == 0)
 		{
 			brake();
 			Distance_test();
 		}
 		ultrasonic[num] = distance;
-		//printf("L%d:%d\r\n", num, (int)distance);
+		// printf("L%d:%d\r\n", num, (int)distance);
 		num++;
 		delay(10);
 	}
@@ -945,7 +956,7 @@ void Distance()
 void Ultrasonic_avoidMode()
 {
 	Distance();		   //测量前方距离
-					   //printf("D:%d\r\n", (int)distance);
+	// printf("D:%d\r\n", (int)distance);
 	if (distance > 20) //障碍物距离大于50时，开启左右红外辅助避障
 	{
 		//遇到障碍物,红外避障模块的指示灯亮,端口电平为LOW
@@ -971,41 +982,10 @@ void Ultrasonic_avoidMode()
 			spin_right(80); //当两侧均检测到障碍物时调用固定方向的避障(原地右转)
 			delay(200);
 		}
-		//距离大于50时前进,亮绿灯
-		CarSpeedControl = 120;
-		run(80);
+		run(60);
 		setRGB(0, 255, 0);
 	}
-	else if ((distance >= 15 && distance <= 20))
-	{
-		//遇到障碍物,红外避障模块的指示灯亮,端口电平为LOW
-		//未遇到障碍物,红外避障模块的指示灯灭,端口电平为HIGH
-		LeftSensorValue = digitalRead(AvoidSensorLeft);
-		RightSensorValue = digitalRead(AvoidSensorRight);
-
-		if (LeftSensorValue == HIGH && RightSensorValue == LOW)
-		{
-			CarSpeedControl = 120;
-			spin_left(80); //右边探测到有障碍物，有信号返回，原地向左转
-			delay(200);
-		}
-		else if (RightSensorValue == HIGH && LeftSensorValue == LOW)
-		{
-			CarSpeedControl = 120;
-			spin_right(80); //左边探测到有障碍物，有信号返回，原地向右转
-			delay(200);
-		}
-		else if (RightSensorValue == LOW && LeftSensorValue == LOW)
-		{
-			CarSpeedControl = 120;
-			spin_right(80); //当两侧均检测到障碍物时调用固定方向的避障(原地右转)
-			delay(200);
-		}
-		//距离在30-50之间时慢速前进
-		CarSpeedControl = 60;
-		run(80);
-	}
-	else if (distance < 15) //当距离小于30时调用舵机颜色控制程序
+	else if (distance <= 20) //当距离小于30时调用舵机颜色控制程序
 	{
 		servo_color_carstate();
 	}
@@ -1430,12 +1410,13 @@ void serial_data_postback()
 	//    超声波 电压  灰度  巡线  红外避障 寻光
 	//$4WD,CSB120,PV8.3,GS214,LF1011,HW11,GM11#
 	//超声波
-	Distance_test();
+	// Distance_test();
+	Distance();
 	ReturnTemp = "$4WD,CSB";
 	ReturnTemp.concat(distance);
 	//电压
 	ReturnTemp += ",PV";
-	//voltage_test();
+	voltage_test();
 	ReturnTemp.concat(voltage_test());
 	//灰度
 	ReturnTemp += ",GS";
