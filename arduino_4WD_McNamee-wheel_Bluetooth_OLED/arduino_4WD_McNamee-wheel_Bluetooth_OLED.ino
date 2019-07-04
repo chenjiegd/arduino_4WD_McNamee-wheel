@@ -959,19 +959,16 @@ void Ultrasonic_avoidMode()
 
 		if (LeftSensorValue == HIGH && RightSensorValue == LOW)
 		{
-			CarSpeedControl = 120;
 			spin_left(80); //右边探测到有障碍物，有信号返回，原地向左转
 			delay(200);
 		}
 		else if (RightSensorValue == HIGH && LeftSensorValue == LOW)
 		{
-			CarSpeedControl = 120;
 			spin_right(80); //左边探测到有障碍物，有信号返回，原地向右转
 			delay(200);
 		}
 		else if (RightSensorValue == LOW && LeftSensorValue == LOW)
 		{
-			CarSpeedControl = 120;
 			spin_right(80); //当两侧均检测到障碍物时调用固定方向的避障(原地右转)
 			delay(200);
 		}
@@ -1019,7 +1016,6 @@ void LightSeeking_Mode()
 	//未遇光线,寻光模块的指示灯亮,端口电平为LOW
 	LdrSersorRightValue = digitalRead(LdrSensorRight);
 	LdrSersorLeftValue = digitalRead(LdrSensorLeft);
-	CarSpeedControl = 120;
 	time--;
 	if (time == 0)
 	{
@@ -1035,15 +1031,15 @@ void LightSeeking_Mode()
 
 	if (LdrSersorLeftValue == HIGH && LdrSersorRightValue == HIGH)
 	{
-		run(150); //两侧均有光时信号为HIGH，光敏电阻指示灯灭,小车前进
+		run(60); //两侧均有光时信号为HIGH，光敏电阻指示灯灭,小车前进
 	}
 	else if (LdrSersorLeftValue == HIGH && LdrSersorRightValue == LOW)
 	{
-		left(150); //左边探测到有光，有信号返回，向左转
+		left(60); //左边探测到有光，有信号返回，向左转
 	}
 	else if (LdrSersorRightValue == HIGH && LdrSersorLeftValue == LOW)
 	{
-		right(150); //右边探测到有光，有信号返回，向右转
+		right(60); //右边探测到有光，有信号返回，向右转
 	}
 	else
 	{
@@ -1059,7 +1055,6 @@ void Ir_flow_Mode()
 	//未遇到跟随物,红外跟随模块的指示灯灭,端口电平为HIGH
 	LeftSensorValue = digitalRead(FollowSensorLeft);
 	RightSensorValue = digitalRead(FollowSensorRight);
-	CarSpeedControl = 120;
 	time--;
 	if (time == 0)
 	{
