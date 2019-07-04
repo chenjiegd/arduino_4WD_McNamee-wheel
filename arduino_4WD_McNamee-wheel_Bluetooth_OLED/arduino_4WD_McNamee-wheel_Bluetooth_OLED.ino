@@ -24,7 +24,7 @@ Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver(0x40);
 #define MAX_LED 1 //小车一共有1个RGB灯
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(MAX_LED, PIN, NEO_RGB + NEO_KHZ800);
 
-#define OLED_RESET 4
+#define OLED_RESET 11
 Adafruit_SSD1306 display(OLED_RESET);
 
 #define LOGO16_GLCD_HEIGHT 32
@@ -759,8 +759,7 @@ void Tracking_Mode()
 	//处理右锐角和右直角的转动
 	if ((TrackSensorLeftValue1 == LOW || TrackSensorLeftValue2 == LOW) && TrackSensorRightValue2 == LOW)
 	{
-		CarSpeedControl = 150;
-		spin_right(150);
+		spin_right(80);
 		delay(80);
 	}
 	//四路循迹引脚电平状态
@@ -770,24 +769,21 @@ void Tracking_Mode()
 	//处理左锐角和左直角的转动
 	else if (TrackSensorLeftValue1 == LOW && (TrackSensorRightValue1 == LOW || TrackSensorRightValue2 == LOW))
 	{
-		CarSpeedControl = 150;
-		spin_left(150);
+		spin_left(80);
 		delay(80);
 	}
 	// 0 X X X
 	//最左边检测到
 	else if (TrackSensorLeftValue1 == LOW)
 	{
-		CarSpeedControl = 100;
-		spin_left(150);
+		spin_left(80);
 		//delay(10);
 	}
 	// X X X 0
 	//最右边检测到
 	else if (TrackSensorRightValue2 == LOW)
 	{
-		CarSpeedControl = 100;
-		spin_right(150);
+		spin_right(80);
 		//delay(10);
 	}
 	//四路循迹引脚电平状态
@@ -795,24 +791,21 @@ void Tracking_Mode()
 	//处理左小弯
 	else if (TrackSensorLeftValue2 == LOW && TrackSensorRightValue1 == HIGH)
 	{
-		CarSpeedControl = 120;
-		left(150);
+		left(80);
 	}
 	//四路循迹引脚电平状态
 	// X 1 0 X
 	//处理右小弯
 	else if (TrackSensorLeftValue2 == HIGH && TrackSensorRightValue1 == LOW)
 	{
-		CarSpeedControl = 120;
-		right(150);
+		right(80);
 	}
 	//四路循迹引脚电平状态
 	// X 0 0 X
 	//处理直线
 	else if (TrackSensorLeftValue2 == LOW && TrackSensorRightValue1 == LOW)
 	{
-		CarSpeedControl = 150;
-		run(150);
+		run(60);
 	}
 }
 /********************************************************************************************************/
@@ -861,7 +854,7 @@ void servo_color_carstate()
 		//亮品红色,掉头
 		setRGB(255, 0, 0);
 		spin_right(80);
-		delay(1000);
+		delay(500);
 		brake();
 	}
 	else if (LeftDistance >= RightDistance) //当发现左侧距离大于右侧，原地左转
@@ -869,7 +862,7 @@ void servo_color_carstate()
 		//亮蓝色
 		setRGB(0, 0, 255);
 		spin_left(80);
-		delay(600);
+		delay(300);
 		brake();
 	}
 	else if (LeftDistance < RightDistance) //当发现右侧距离大于左侧，原地右转
@@ -877,7 +870,7 @@ void servo_color_carstate()
 		//亮品红色,向右转
 		setRGB(255, 0, 0);
 		spin_right(80);
-		delay(600);
+		delay(300);
 		brake();
 	}
 }
@@ -1118,6 +1111,7 @@ void serial_data_parse()
 		if (InputString[10] == '0') //停止模式
 		{
 			Controling();
+			Display_voltage();
 			brake();
 			g_CarState = enSTOP;
 			g_modeSelect = 0;
@@ -1130,34 +1124,42 @@ void serial_data_parse()
 			case '0':
 				g_modeSelect = 0;
 				Controling();
+				Display_voltage();
 				break;
 			case '1':
 				g_modeSelect = 1;
 				Controling();
+				Display_voltage();
 				break;
 			case '2':
 				g_modeSelect = 2;
 				Tracking();
+				Display_voltage();
 				break;
 			case '3':
 				g_modeSelect = 3;
 				Avoiding();
+				Display_voltage();
 				break;
 			case '4':
 				g_modeSelect = 4;
 				Colorful_searchlight();
+				Display_voltage();
 				break;
 			case '5':
 				g_modeSelect = 5;
 				Seeking_light();
+				Display_voltage();
 				break;
 			case '6':
 				g_modeSelect = 6;
 				Following();
+				Display_voltage();
 				break;
 			default:
 				g_modeSelect = 0;
 				Controling();
+				Display_voltage();
 				break;
 			}
 			delay(1000);
@@ -1487,6 +1489,7 @@ void loop()
 		if (flag == 0)
 		{
 			Controling();
+			Display_voltage();
 			flag = 1;
 		}
 		serial_data_parse(); //调用串口解析函数
@@ -1714,5 +1717,28 @@ void Controling()
 	display.setCursor(0, 0);
 	display.clearDisplay();
 	display.println("Remoting!");
+	display.display();
+}
+
+/*
+* Function       Controling
+* @author        wusicaijuan
+* @date          2019.07.04
+* @brief         控制模式
+* @param[in]     void
+* @param[out]    void
+* @retval        void
+* @par History   无
+*/
+void Display_voltage()
+{
+	display.setTextSize(2);
+	display.setTextColor(WHITE);
+	display.setCursor(0, 16);
+	display.print("DCV:");
+	display.setCursor(46, 16);
+	display.print(VoltageValue);
+	display.setCursor(94, 16);
+	display.print("V");
 	display.display();
 }
