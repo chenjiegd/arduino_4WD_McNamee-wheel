@@ -24,7 +24,7 @@ Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver(0x40);
 #define MAX_LED 1 //小车一共有1个RGB灯
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(MAX_LED, PIN, NEO_RGB + NEO_KHZ800);
 
-#define OLED_RESET 4
+#define OLED_RESET 11
 Adafruit_SSD1306 display(OLED_RESET);
 
 #define LOGO16_GLCD_HEIGHT 32
@@ -55,9 +55,11 @@ enum
 	enTRIGHT
 } enCarState;
 
-char enServo[] = {0, 1, 2, 3};
+const char enServo[] = {0, 1, 2, 3};
 
-int key = 7; //按键key
+const int key = 7; //按键key
+
+int flag = 0;
 
 //循迹红外引脚定义
 //TrackSensorLeftPin1 TrackSensorLeftPin2 TrackSensorRightPin1 TrackSensorRightPin2
@@ -96,15 +98,15 @@ String LDR_value = "00";
 double position = 0; //七彩探照
 
 /*电压引脚及其变量设置*/
-int VoltagePin = A2;
-int VoltageValue = 0;
+const int VoltagePin = A2;
+double VoltageValue = 0;
 
 /*小车初始速度控制*/
 int CarSpeedControl = 150;
 
 /*超声波引脚及变量设置*/
-int EchoPin = 13; //Echo回声脚
-int TrigPin = 12; //Trig触发脚
+const int EchoPin = 13; //Echo回声脚
+const int TrigPin = 12; //Trig触发脚
 float distance = 0;
 
 /*颜色值*/
@@ -126,7 +128,7 @@ int g_modeSelect = 0;	//0是默认状态;  1:红外遥控 2:巡线模式 3:超�
 boolean g_motor = false;
 
 /*电压检测查表法定义数组(电压值,A0端口读到的模拟值)*/
-float voltage_table[21][2] =
+const float voltage_table[21][2] =
 	{
 		{6.46, 676}, {6.51, 678}, {6.61, 683}, {6.72, 687}, {6.82, 691}, {6.91, 695}, {7.01, 700}, {7.11, 703}, {7.20, 707}, {7.31, 712}, {7.4, 715}, {7.5, 719}, {7.6, 723}, {7.7, 728}, {7.81, 733}, {7.91, 740}, {8.02, 741}, {8.1, 745}, {8.22, 749}, {8.30, 753}, {8.4, 758}};
 
@@ -155,12 +157,33 @@ void setup()
 	//串口波特率设置
 	Serial.begin(9600);
 	printf_begin();
-	//初始化电机驱动IO为输出方式
-	pwm.begin();
-	pwm.setPWMFreq(60); // Analog servos run at ~60 Hz updates
 
 	strip.begin();
 	strip.show();
+	PCB_RGB_OFF();
+
+	//初始化电机驱动IO为输出方式
+	pwm.begin();
+	pwm.setPWMFreq(60); // Analog servos run at ~60 Hz updates
+	//电机驱动
+	pwm.setPWM(8, 0, 0);
+	pwm.setPWM(9, 0, 0);
+	pwm.setPWM(11, 0, 0);
+	pwm.setPWM(10, 0, 0);
+
+	pwm.setPWM(12, 0, 0);
+	pwm.setPWM(13, 0, 0);
+	pwm.setPWM(14, 0, 0);
+	pwm.setPWM(15, 0, 0);
+	//外接RGB
+	pwm.setPWM(6, 0, 0);
+	pwm.setPWM(5, 0, 0);
+	pwm.setPWM(4, 0, 0);
+
+	// PCB_LED();
+	breathing_light(255, 40, 5);
+
+	pinMode(VoltagePin, INPUT);
 
 	//定义四路循迹红外传感器为输入接口
 	pinMode(TrackSensorLeftPin1, INPUT);
@@ -216,7 +239,7 @@ void Distance_test()
 	//  Serial.print(Fdistance);              //显示距离
 	//  Serial.println("cm");
 	distance = Fdistance;
-	return;
+	// return;
 }
 
 /**
@@ -231,44 +254,44 @@ void Distance_test()
 */
 float voltage_test()
 {
-	pinMode(VoltagePin, INPUT);			   //电压检测引脚和蜂鸣器引脚A5调整引脚模式来分时复用
 	VoltageValue = analogRead(VoltagePin); //读取A0口值,换算为电压值
 
 	//方法一:通过电路原理图和采集的A0口模拟值得到电压值
-	//Serial.println(VoltageValue);
-	//VoltageValue = (VoltageValue / 1023) * 5.02 * 1.75  ;
+	// Serial.println(VoltageValue);
+	VoltageValue = (VoltageValue / 1023) * 5.02 * 4.03;
+	return VoltageValue;
 	//Voltage是端口A0采集到的ad值（0-1023），
 	//1.75是（R14+R15）/R15的结果，其中R14=15K,R15=20K）。
 
 	/*查表记录打开*/
-	//  float voltage = 0;
-	//  voltage = VoltageValue;
-	//  return voltage;
+	// float voltage = 0;
+	// voltage = VoltageValue;
+	// return voltage;
 
 	//方法二:通过提前测量6.4-8.4v所对应的A0口模拟值,再通过查表法确定其值
 	//       这种方法的误差小于0.1v
-	int i = 0;
-	float voltage = 0;
-	if (VoltageValue > voltage_table[20][1])
-	{
-		voltage = 8.4;
-		return voltage;
-	}
-	if (VoltageValue < voltage_table[0][1])
-	{
-		voltage = 6.4;
-		return voltage;
-	}
-	for (i = 0; i < 20; i++)
-	{
-		if (VoltageValue >= voltage_table[i][1] && VoltageValue <= voltage_table[i + 1][1])
-		{
-			voltage = voltage_table[i][0] + (VoltageValue - voltage_table[i][1]) * ((voltage_table[i + 1][0] - voltage_table[i][0]) / (voltage_table[i + 1][1] - voltage_table[i][1]));
-			return voltage;
-		}
-	}
-	pinMode(VoltagePin, OUTPUT);
+	// int i = 0;
+	// float voltage = 0;
+	// if (VoltageValue > voltage_table[20][1])
+	// {
+	// 	voltage = 8.4;
+	// 	return voltage;
+	// }
+	// if (VoltageValue < voltage_table[0][1])
+	// {
+	// 	voltage = 6.4;
+	// 	return voltage;
+	// }
+	// for (i = 0; i < 20; i++)
+	// {
+	// 	if (VoltageValue >= voltage_table[i][1] && VoltageValue <= voltage_table[i + 1][1])
+	// 	{
+	// 		voltage = voltage_table[i][0] + (VoltageValue - voltage_table[i][1]) * ((voltage_table[i + 1][0] - voltage_table[i][0]) / (voltage_table[i + 1][1] - voltage_table[i][1]));
+	// 		return voltage;
+	// 	}
+	// }
 	return 0;
+	// return;
 }
 
 /**
@@ -606,6 +629,93 @@ void setRGB(int R, int G, int B)
 	pwm.setPWM(5, 0, G);
 	pwm.setPWM(4, 0, B);
 }
+
+/**
+* Function       PCB_RGB(R,G,B)
+* @author        wusicaijuan
+* @date          2019.06.26
+* @brief         设置板载RGB灯
+* @param[in1]	 R
+* @param[in2]    G
+* @param[in3]    B
+* @param[out]    void
+* @retval        void
+* @par History   无
+*/
+void PCB_RGB(int R, int G, int B)
+{
+	uint8_t i = 0;
+	R = map(R, 0, 255, 0, 10);
+	G = map(G, 0, 255, 0, 10);
+	B = map(B, 0, 255, 0, 10);
+	uint32_t color = strip.Color(G, R, B);
+	strip.setPixelColor(i, color);
+	strip.show();
+}
+
+/**
+* Function       PCB_RGB(R,G,B)
+* @author        wusicaijuan
+* @date          2019.06.26
+* @brief         设置板载RGB灯
+* @param[in1]	 void
+* @param[out]    void
+* @retval        void
+* @par History   无
+*/
+void PCB_RGB_OFF()
+{
+	uint8_t i = 0;
+	uint32_t color = strip.Color(0, 0, 0);
+	strip.setPixelColor(i, color);
+	strip.show();
+}
+
+/**
+* Function       PCB_LED()
+* @author        wusicaijuan
+* @date          2019.07.03
+* @brief         设置板载LED灯
+* @param[in1]	 void
+* @param[out]    void
+* @retval        void
+* @par History   无
+*/
+void PCB_LED()
+{
+	pwm.setPWM(7, 0, 4095);
+}
+
+/**
+* Function       breathing_light(brightness,time,increament)
+* @author        wusicaijuan
+* @date          2019.06.26
+* @brief         呼吸灯
+* @param[in1]	 brightness
+* @param[in2]    time
+* @param[in3]    increament
+* @param[out]    void
+* @retval        void
+* @par History   无
+*/
+void breathing_light(int brightness, int time, int increament)
+{
+	if (brightness < 0)
+	{
+		brightness = 0;
+	}
+	if (brightness > 255)
+	{
+		brightness = 255;
+	}
+	for (int b = 0; b < brightness; b += increament)
+	{
+		int newb = map(b, 0, 255, 0, 4095);
+		pwm.setPWM(7, 0, newb);
+		delay(time);
+	}
+}
+
 /********************************************************************************************************/
 /*模式2 巡线*/
 /**
@@ -649,8 +759,7 @@ void Tracking_Mode()
 	//处理右锐角和右直角的转动
 	if ((TrackSensorLeftValue1 == LOW || TrackSensorLeftValue2 == LOW) && TrackSensorRightValue2 == LOW)
 	{
-		CarSpeedControl = 150;
-		spin_right(150);
+		spin_right(80);
 		delay(80);
 	}
 	//四路循迹引脚电平状态
@@ -660,24 +769,21 @@ void Tracking_Mode()
 	//处理左锐角和左直角的转动
 	else if (TrackSensorLeftValue1 == LOW && (TrackSensorRightValue1 == LOW || TrackSensorRightValue2 == LOW))
 	{
-		CarSpeedControl = 150;
-		spin_left(150);
+		spin_left(80);
 		delay(80);
 	}
 	// 0 X X X
 	//最左边检测到
 	else if (TrackSensorLeftValue1 == LOW)
 	{
-		CarSpeedControl = 100;
-		spin_left(150);
+		spin_left(80);
 		//delay(10);
 	}
 	// X X X 0
 	//最右边检测到
 	else if (TrackSensorRightValue2 == LOW)
 	{
-		CarSpeedControl = 100;
-		spin_right(150);
+		spin_right(80);
 		//delay(10);
 	}
 	//四路循迹引脚电平状态
@@ -685,24 +791,21 @@ void Tracking_Mode()
 	//处理左小弯
 	else if (TrackSensorLeftValue2 == LOW && TrackSensorRightValue1 == HIGH)
 	{
-		CarSpeedControl = 120;
-		left(150);
+		left(80);
 	}
 	//四路循迹引脚电平状态
 	// X 1 0 X
 	//处理右小弯
 	else if (TrackSensorLeftValue2 == HIGH && TrackSensorRightValue1 == LOW)
 	{
-		CarSpeedControl = 120;
-		right(150);
+		right(80);
 	}
 	//四路循迹引脚电平状态
 	// X 0 0 X
 	//处理直线
 	else if (TrackSensorLeftValue2 == LOW && TrackSensorRightValue1 == LOW)
 	{
-		CarSpeedControl = 150;
-		run(150);
+		run(60);
 	}
 }
 /********************************************************************************************************/
@@ -720,14 +823,12 @@ void Tracking_Mode()
 void servo_color_carstate()
 {
 	//定义舵机位置变量和小车前方,左侧,右侧距离
-	int iServoPos = 0;
 	int LeftDistance = 0;  //左方距离值变量LeftDistance
 	int RightDistance = 0; //右方距离值变量RightDistance
 	int FrontDistance = 0; //前方距离值变量FrontDistance
 	setRGB(255, 0, 0);
-	CarSpeedControl = 80;
-	back(150); //避免突然停止,刹不住车
-	delay(80);
+	// back(150); //避免突然停止,刹不住车
+	// delay(80);
 	brake();
 
 	//舵机旋转到0度,即右侧,测距
@@ -752,27 +853,24 @@ void servo_color_carstate()
 	{
 		//亮品红色,掉头
 		setRGB(255, 0, 0);
-		CarSpeedControl = 120;
-		spin_right(150);
-		delay(560);
+		spin_right(80);
+		delay(500);
 		brake();
 	}
 	else if (LeftDistance >= RightDistance) //当发现左侧距离大于右侧，原地左转
 	{
 		//亮蓝色
 		setRGB(0, 0, 255);
-		CarSpeedControl = 120;
-		spin_left(150);
-		delay(280);
+		spin_left(80);
+		delay(300);
 		brake();
 	}
 	else if (LeftDistance < RightDistance) //当发现右侧距离大于左侧，原地右转
 	{
 		//亮品红色,向右转
 		setRGB(255, 0, 0);
-		CarSpeedControl = 120;
-		spin_right(150);
-		delay(280);
+		spin_right(80);
+		delay(300);
 		brake();
 	}
 }
@@ -823,13 +921,13 @@ void Distance()
 	{
 		Distance_test();
 		//过滤掉测试距离中出现的错误数据大于500,或者distance==0
-		while (distance >= 500 || distance == 0)
+		while (distance >= 600 || distance == 0)
 		{
 			brake();
 			Distance_test();
 		}
 		ultrasonic[num] = distance;
-		//printf("L%d:%d\r\n", num, (int)distance);
+		// printf("L%d:%d\r\n", num, (int)distance);
 		num++;
 		delay(10);
 	}
@@ -850,9 +948,9 @@ void Distance()
 */
 void Ultrasonic_avoidMode()
 {
-	Distance();		   //测量前方距离
-					   //printf("D:%d\r\n", (int)distance);
-	if (distance > 30) //障碍物距离大于50时，开启左右红外辅助避障
+	Distance(); //测量前方距离
+	// printf("D:%d\r\n", (int)distance);
+	if (distance > 20) //障碍物距离大于50时，开启左右红外辅助避障
 	{
 		//遇到障碍物,红外避障模块的指示灯亮,端口电平为LOW
 		//未遇到障碍物,红外避障模块的指示灯灭,端口电平为HIGH
@@ -861,57 +959,23 @@ void Ultrasonic_avoidMode()
 
 		if (LeftSensorValue == HIGH && RightSensorValue == LOW)
 		{
-			CarSpeedControl = 120;
-			spin_left(150); //右边探测到有障碍物，有信号返回，原地向左转
+			spin_left(80); //右边探测到有障碍物，有信号返回，原地向左转
 			delay(200);
 		}
 		else if (RightSensorValue == HIGH && LeftSensorValue == LOW)
 		{
-			CarSpeedControl = 120;
-			spin_right(150); //左边探测到有障碍物，有信号返回，原地向右转
+			spin_right(80); //左边探测到有障碍物，有信号返回，原地向右转
 			delay(200);
 		}
 		else if (RightSensorValue == LOW && LeftSensorValue == LOW)
 		{
-			CarSpeedControl = 120;
-			spin_right(150); //当两侧均检测到障碍物时调用固定方向的避障(原地右转)
+			spin_right(80); //当两侧均检测到障碍物时调用固定方向的避障(原地右转)
 			delay(200);
 		}
-		//距离大于50时前进,亮绿灯
-		CarSpeedControl = 120;
-		run(150);
+		run(60);
 		setRGB(0, 255, 0);
 	}
-	else if ((distance >= 20 && distance <= 30))
-	{
-		//遇到障碍物,红外避障模块的指示灯亮,端口电平为LOW
-		//未遇到障碍物,红外避障模块的指示灯灭,端口电平为HIGH
-		LeftSensorValue = digitalRead(AvoidSensorLeft);
-		RightSensorValue = digitalRead(AvoidSensorRight);
-
-		if (LeftSensorValue == HIGH && RightSensorValue == LOW)
-		{
-			CarSpeedControl = 120;
-			spin_left(150); //右边探测到有障碍物，有信号返回，原地向左转
-			delay(200);
-		}
-		else if (RightSensorValue == HIGH && LeftSensorValue == LOW)
-		{
-			CarSpeedControl = 120;
-			spin_right(150); //左边探测到有障碍物，有信号返回，原地向右转
-			delay(200);
-		}
-		else if (RightSensorValue == LOW && LeftSensorValue == LOW)
-		{
-			CarSpeedControl = 120;
-			spin_right(150); //当两侧均检测到障碍物时调用固定方向的避障(原地右转)
-			delay(200);
-		}
-		//距离在30-50之间时慢速前进
-		CarSpeedControl = 60;
-		run(150);
-	}
-	else if (distance < 20) //当距离小于30时调用舵机颜色控制程序
+	else if (distance <= 20) //当距离小于30时调用舵机颜色控制程序
 	{
 		servo_color_carstate();
 	}
@@ -933,15 +997,6 @@ void FindColor_Mode()
 		setRGB(random(0, 255), random(0, 255), random(0, 255));
 		delay(100);
 	}
-
-	// Servo180(1, position);
-	// setRGB( random(0,255), random(0,255), random(0,255));
-	// position += 10;
-	// delay(100);
-	// if(position > 180)
-	// {
-	// 	position = 0;
-	// }
 }
 
 /********************************************************************************************************/
@@ -952,7 +1007,22 @@ void LightSeeking_Mode()
 	//未遇光线,寻光模块的指示灯亮,端口电平为LOW
 	LdrSersorRightValue = digitalRead(LdrSensorRight);
 	LdrSersorLeftValue = digitalRead(LdrSensorLeft);
-	CarSpeedControl = 120;
+	if (LdrSersorLeftValue == HIGH && LdrSersorRightValue == HIGH)
+	{
+		run(60); //两侧均有光时信号为HIGH，光敏电阻指示灯灭,小车前进
+	}
+	else if (LdrSersorLeftValue == HIGH && LdrSersorRightValue == LOW)
+	{
+		left(60); //左边探测到有光，有信号返回，向左转
+	}
+	else if (LdrSersorRightValue == HIGH && LdrSersorLeftValue == LOW)
+	{
+		right(60); //右边探测到有光，有信号返回，向右转
+	}
+	else
+	{
+		brake(); //均无光，停止
+	}
 	time--;
 	if (time == 0)
 	{
@@ -965,23 +1035,6 @@ void LightSeeking_Mode()
 			count = 1;
 		}
 	}
-
-	if (LdrSersorLeftValue == HIGH && LdrSersorRightValue == HIGH)
-	{
-		run(150); //两侧均有光时信号为HIGH，光敏电阻指示灯灭,小车前进
-	}
-	else if (LdrSersorLeftValue == HIGH && LdrSersorRightValue == LOW)
-	{
-		left(150); //左边探测到有光，有信号返回，向左转
-	}
-	else if (LdrSersorRightValue == HIGH && LdrSersorLeftValue == LOW)
-	{
-		right(150); //右边探测到有光，有信号返回，向右转
-	}
-	else
-	{
-		brake(); //均无光，停止
-	}
 }
 /********************************************************************************************************/
 /*模式6: 红外跟随模式*/
@@ -992,7 +1045,22 @@ void Ir_flow_Mode()
 	//未遇到跟随物,红外跟随模块的指示灯灭,端口电平为HIGH
 	LeftSensorValue = digitalRead(FollowSensorLeft);
 	RightSensorValue = digitalRead(FollowSensorRight);
-	CarSpeedControl = 120;
+	if (LeftSensorValue == LOW && RightSensorValue == LOW)
+	{
+		run(60); //当两侧均检测到跟随物时调用前进函数
+	}
+	else if (LeftSensorValue == LOW && RightSensorValue == HIGH)
+	{
+		spin_left(80); //左边探测到有跟随物，有信号返回，原地向左转
+	}
+	else if (RightSensorValue == LOW && LeftSensorValue == HIGH)
+	{
+		spin_right(80); //右边探测到有跟随物，有信号返回，原地向右转
+	}
+	else
+	{
+		brake(); //当两侧均未检测到跟随物时停止
+	}
 	time--;
 	if (time == 0)
 	{
@@ -1004,23 +1072,6 @@ void Ir_flow_Mode()
 			time = 2000;
 			count = 1;
 		}
-	}
-
-	if (LeftSensorValue == LOW && RightSensorValue == LOW)
-	{
-		run(150); //当两侧均检测到跟随物时调用前进函数
-	}
-	else if (LeftSensorValue == LOW && RightSensorValue == HIGH)
-	{
-		spin_left(150); //左边探测到有跟随物，有信号返回，原地向左转
-	}
-	else if (RightSensorValue == LOW && LeftSensorValue == HIGH)
-	{
-		spin_right(150); //右边探测到有跟随物，有信号返回，原地向右转
-	}
-	else
-	{
-		brake(); //当两侧均未检测到跟随物时停止
 	}
 }
 
@@ -1043,6 +1094,8 @@ void serial_data_parse()
 	{
 		if (InputString[10] == '0') //停止模式
 		{
+			Controling();
+			Display_voltage();
 			brake();
 			g_CarState = enSTOP;
 			g_modeSelect = 0;
@@ -1055,34 +1108,42 @@ void serial_data_parse()
 			case '0':
 				g_modeSelect = 0;
 				Controling();
+				Display_voltage();
 				break;
 			case '1':
 				g_modeSelect = 1;
 				Controling();
+				Display_voltage();
 				break;
 			case '2':
 				g_modeSelect = 2;
 				Tracking();
+				Display_voltage();
 				break;
 			case '3':
 				g_modeSelect = 3;
 				Avoiding();
+				Display_voltage();
 				break;
 			case '4':
 				g_modeSelect = 4;
 				Colorful_searchlight();
+				Display_voltage();
 				break;
 			case '5':
 				g_modeSelect = 5;
 				Seeking_light();
+				Display_voltage();
 				break;
 			case '6':
 				g_modeSelect = 6;
 				Following();
+				Display_voltage();
 				break;
 			default:
 				g_modeSelect = 0;
 				Controling();
+				Display_voltage();
 				break;
 			}
 			delay(1000);
@@ -1295,22 +1356,22 @@ void serial_data_parse()
 			brake();
 			break;
 		case enRUN:
-			run(150);
+			run(CarSpeedControl);
 			break;
 		case enLEFT:
-			left(150);
+			left(CarSpeedControl);
 			break;
 		case enRIGHT:
-			right(150);
+			right(CarSpeedControl);
 			break;
 		case enBACK:
-			back(150);
+			back(CarSpeedControl);
 			break;
 		case enTLEFT:
-			spin_left(150);
+			spin_left(CarSpeedControl);
 			break;
 		case enTRIGHT:
-			spin_right(150);
+			spin_right(CarSpeedControl);
 			break;
 		default:
 			brake();
@@ -1335,12 +1396,13 @@ void serial_data_postback()
 	//    超声波 电压  灰度  巡线  红外避障 寻光
 	//$4WD,CSB120,PV8.3,GS214,LF1011,HW11,GM11#
 	//超声波
-	Distance_test();
+	// Distance_test();
+	Distance();
 	ReturnTemp = "$4WD,CSB";
 	ReturnTemp.concat(distance);
 	//电压
 	ReturnTemp += ",PV";
-	//voltage_test();
+	voltage_test();
 	ReturnTemp.concat(voltage_test());
 	//灰度
 	ReturnTemp += ",GS";
@@ -1408,6 +1470,12 @@ void loop()
 {
 	if (NewLineReceived)
 	{
+		if (flag == 0)
+		{
+			Controling();
+			Display_voltage();
+			flag = 1;
+		}
 		serial_data_parse(); //调用串口解析函数
 	}
 
@@ -1449,7 +1517,7 @@ void loop()
 			time = 20000;
 			if (count == 0)
 			{
-				Controling();
+				// Controling();
 				serial_data_postback();
 				time = 20000;
 				count = 10;
@@ -1498,6 +1566,7 @@ void keysacn()
 */
 void welcome()
 {
+	PCB_RGB(255, 0, 0);
 	display.setTextSize(2);
 	display.setTextColor(WHITE);
 	display.setCursor(0, 0);
@@ -1519,6 +1588,7 @@ void welcome()
 */
 void Tracking()
 {
+	PCB_RGB(0, 0, 255);
 	display.setTextSize(2);
 	display.setTextColor(WHITE);
 	display.setCursor(0, 0);
@@ -1539,6 +1609,7 @@ void Tracking()
 */
 void Avoiding()
 {
+	PCB_RGB(255, 255, 0);
 	display.setTextSize(2);
 	display.setTextColor(WHITE);
 	display.setCursor(0, 0);
@@ -1559,12 +1630,12 @@ void Avoiding()
 */
 void Colorful_searchlight()
 {
+	PCB_RGB(0, 255, 255);
 	display.setTextSize(2);
 	display.setTextColor(WHITE);
 	display.setCursor(0, 0);
 	display.clearDisplay();
-	display.println("Colorful");
-	display.println("searchLED!");
+	display.println("Colorful!");
 	display.display();
 }
 
@@ -1580,12 +1651,12 @@ void Colorful_searchlight()
 */
 void Seeking_light()
 {
+	PCB_RGB(255, 0, 255);
 	display.setTextSize(2);
 	display.setTextColor(WHITE);
 	display.setCursor(0, 0);
 	display.clearDisplay();
-	display.println("Seeking");
-	display.println("light!");
+	display.println("Seeking!");
 	display.display();
 }
 
@@ -1601,6 +1672,7 @@ void Seeking_light()
 */
 void Following()
 {
+	PCB_RGB(64, 224, 205);
 	display.setTextSize(2);
 	display.setTextColor(WHITE);
 	display.setCursor(0, 0);
@@ -1621,10 +1693,34 @@ void Following()
 */
 void Controling()
 {
+	PCB_RGB(0, 255, 0);
 	display.setTextSize(2);
 	display.setTextColor(WHITE);
 	display.setCursor(0, 0);
 	display.clearDisplay();
 	display.println("Remoting!");
+	display.display();
+}
+
+/*
+* Function       Controling
+* @author        wusicaijuan
+* @date          2019.07.04
+* @brief         控制模式
+* @param[in]     void
+* @param[out]    void
+* @retval        void
+* @par History   无
+*/
+void Display_voltage()
+{
+	display.setTextSize(2);
+	display.setTextColor(WHITE);
+	display.setCursor(0, 16);
+	display.print("DCV:");
+	display.setCursor(46, 16);
+	display.print(VoltageValue);
+	display.setCursor(94, 16);
+	display.print("V");
 	display.display();
 }
