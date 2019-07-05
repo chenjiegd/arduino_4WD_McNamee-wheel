@@ -4,7 +4,7 @@
 * @author       wusicaijuan
 * @version      V1.0
 * @date         2019.07.01
-* @brief        蓝牙控制智能小车实验
+* @brief        蓝牙控制arduino4WD小车
 * @details
 * @par History  见如下说明
 *
@@ -44,8 +44,7 @@ Adafruit_SSD1306 display(OLED_RESET);
 #define OFF 0 //禁止LED
 
 /*小车运行状态枚举*/
-enum
-{
+const typedef enum {
 	enSTOP = 0,
 	enRUN,
 	enBACK,
@@ -109,9 +108,6 @@ const int EchoPin = 13; //Echo回声脚
 const int TrigPin = 12; //Trig触发脚
 float distance = 0;
 
-/*颜色值*/
-int red, green, blue;
-
 /*计时变量用于延时*/
 int time = 20000;
 int count = 10;
@@ -126,11 +122,6 @@ String ReturnTemp = "";			 //存储返回值
 int g_CarState = enSTOP; //1前2后3左4右0停止
 int g_modeSelect = 0;	//0是默认状态;  1:红外遥控 2:巡线模式 3:超声波避障 4: 七彩探照 5: 寻光模式 6: 红外跟踪
 boolean g_motor = false;
-
-/*电压检测查表法定义数组(电压值,A0端口读到的模拟值)*/
-const float voltage_table[21][2] =
-	{
-		{6.46, 676}, {6.51, 678}, {6.61, 683}, {6.72, 687}, {6.82, 691}, {6.91, 695}, {7.01, 700}, {7.11, 703}, {7.20, 707}, {7.31, 712}, {7.4, 715}, {7.5, 719}, {7.6, 723}, {7.7, 728}, {7.81, 733}, {7.91, 740}, {8.02, 741}, {8.1, 745}, {8.22, 749}, {8.30, 753}, {8.4, 758}};
 
 /*printf格式化字符串初始化*/
 int serial_putc(char c, struct __file *)
@@ -244,8 +235,8 @@ void Distance_test()
 
 /**
 * Function       voltage_test
-* @author        Danny
-* @date          2017.07.26
+* @author        wusicaijuan
+* @date          2019.07.04
 * @brief         电池电压引脚检测
 * @param[in]     void
 * @param[out]    void
@@ -263,35 +254,7 @@ float voltage_test()
 	//Voltage是端口A0采集到的ad值（0-1023），
 	//1.75是（R14+R15）/R15的结果，其中R14=15K,R15=20K）。
 
-	/*查表记录打开*/
-	// float voltage = 0;
-	// voltage = VoltageValue;
-	// return voltage;
-
-	//方法二:通过提前测量6.4-8.4v所对应的A0口模拟值,再通过查表法确定其值
-	//       这种方法的误差小于0.1v
-	// int i = 0;
-	// float voltage = 0;
-	// if (VoltageValue > voltage_table[20][1])
-	// {
-	// 	voltage = 8.4;
-	// 	return voltage;
-	// }
-	// if (VoltageValue < voltage_table[0][1])
-	// {
-	// 	voltage = 6.4;
-	// 	return voltage;
-	// }
-	// for (i = 0; i < 20; i++)
-	// {
-	// 	if (VoltageValue >= voltage_table[i][1] && VoltageValue <= voltage_table[i + 1][1])
-	// 	{
-	// 		voltage = voltage_table[i][0] + (VoltageValue - voltage_table[i][1]) * ((voltage_table[i + 1][0] - voltage_table[i][0]) / (voltage_table[i + 1][1] - voltage_table[i][1]));
-	// 		return voltage;
-	// 	}
-	// }
 	return 0;
-	// return;
 }
 
 /**
@@ -886,7 +849,6 @@ void servo_color_carstate()
 * @par History   无
 */
 void bubble(unsigned long *a, int n)
-
 {
 	int i, j, temp;
 	for (i = 0; i < n - 1; i++)
@@ -1165,56 +1127,13 @@ void serial_data_parse()
 	//如:$4WD,PTZ180# 舵机转动到180度
 	if (InputString.indexOf("PTZ") > 0)
 	{
-		int m_kp;
 		int i = InputString.indexOf("PTZ"); //寻找以PTZ开头,#结束中间的字符
 		int ii = InputString.indexOf("#", i);
 		if (ii > i)
 		{
 			String m_skp = InputString.substring(i + 3, ii);
 			int m_kp = m_skp.toInt(); //将找到的字符串变成整型
-			//      Serial.print("PTZ:");
-			//      Serial.println(m_kp);
-			Servo180(1, 180 - m_kp); //转动到指定角度m_kp
-			InputString = "";		 //清空串口数据
-			NewLineReceived = false;
-			return;
-		}
-	}
-	//解析上位机发来的七彩探照灯指令并点亮相应的颜色
-	//如:$4WD,CLR255,CLG0,CLB0# 七彩灯亮红色
-	else if (InputString.indexOf("CLR") > 0)
-	{
-		int m_kp;
-		int i = InputString.indexOf("CLR");
-		int ii = InputString.indexOf(",", i);
-		if (ii > i)
-		{
-			String m_skp = InputString.substring(i + 3, ii);
-			int m_kp = m_skp.toInt();
-			//      Serial.print("CLR:");
-			//      Serial.println(m_kp);
-			red = m_kp;
-		}
-		i = InputString.indexOf("CLG");
-		ii = InputString.indexOf(",", i);
-		if (ii > i)
-		{
-			String m_skp = InputString.substring(i + 3, ii);
-			int m_kp = m_skp.toInt();
-			//      Serial.print("CLG:");
-			//      Serial.println(m_kp);
-			green = m_kp;
-		}
-		i = InputString.indexOf("CLB");
-		ii = InputString.indexOf("#", i);
-		if (ii > i)
-		{
-			String m_skp = InputString.substring(i + 3, ii);
-			int m_kp = m_skp.toInt();
-			//      Serial.print("CLB:");
-			//      Serial.println(m_kp);
-			blue = m_kp;
-			setRGB(red, green, blue); //点亮相应颜色的灯
+			Servo180(1, 180 - m_kp);  //转动到指定角度m_kp
 			InputString = "";		  //清空串口数据
 			NewLineReceived = false;
 			return;
@@ -1300,20 +1219,6 @@ void serial_data_parse()
 			break;
 		}
 
-		//灭火判断
-		// if (InputString[15] == '1')  //灭火
-		// {
-		// 	pinMode(OutfirePin, OUTPUT);
-		// 	digitalWrite(OutfirePin, LOW );
-		// 	g_motor = true;
-		// }
-		// else if (InputString[15] == '0')  //灭火
-		// {
-		// 	pinMode(OutfirePin, OUTPUT);
-		// 	digitalWrite(OutfirePin, HIGH );
-		// 	g_motor = false;
-		// }
-
 		//舵机归为判断
 		if (InputString[17] == '1') //舵机旋转到90度
 		{
@@ -1382,8 +1287,8 @@ void serial_data_parse()
 
 /**
 * Function       serial_data_postback
-* @author        Danny
-* @date          2017.07.25
+* @author        wusicaijuan
+* @date          2019.07.05
 * @brief         将采集的传感器数据通过串口传输给上位机显示
 * @param[in]     void
 * @retval        void
@@ -1459,8 +1364,8 @@ void serialEvent()
 
 /**
 * Function       loop
-* @author        Danny
-* @date          2017.07.25
+* @author        wusicaijuan
+* @date          2019.07.05
 * @brief         对串口发送过来的数据解析，并执行相应的指令
 * @param[in]     void
 * @retval        void
@@ -1485,23 +1390,18 @@ void loop()
 	case 1:
 		break; //暂时保留
 	case 2:
-		// Tracking();
 		Tracking_Mode();
 		break; //巡线模式
 	case 3:
-		// Avoiding();
 		Ultrasonic_avoidMode();
 		break; //超声波避障模式
 	case 4:
-		// Colorful_searchlight();
 		FindColor_Mode();
 		break; //七彩颜色识别模式
 	case 5:
-		// Seeking_light();
 		LightSeeking_Mode();
 		break; //寻光模式
 	case 6:
-		// Following();
 		Ir_flow_Mode();
 		break; //跟随模式
 	}
