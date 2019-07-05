@@ -158,20 +158,7 @@ void setup()
 	//初始化电机驱动IO为输出方式
 	pwm.begin();
 	pwm.setPWMFreq(60); // Analog servos run at ~60 Hz updates
-	//电机驱动
-	pwm.setPWM(8, 0, 0);
-	pwm.setPWM(9, 0, 0);
-	pwm.setPWM(11, 0, 0);
-	pwm.setPWM(10, 0, 0);
-
-	pwm.setPWM(12, 0, 0);
-	pwm.setPWM(13, 0, 0);
-	pwm.setPWM(14, 0, 0);
-	pwm.setPWM(15, 0, 0);
-	//外接RGB
-	pwm.setPWM(6, 0, 0);
-	pwm.setPWM(5, 0, 0);
-	pwm.setPWM(4, 0, 0);
+	Clear_All_PWM();
 
 	// PCB_LED();
 	breathing_light(255, 40, 5);
@@ -1664,4 +1651,21 @@ void Display_voltage()
 	display.setCursor(94, 16);
 	display.print("V");
 	display.display();
+}
+
+/*
+* Function       Controling
+* @author        wusicaijuan
+* @date          2019.07.04
+* @brief         控制模式
+* @param[in]     void
+* @param[out]    void
+* @retval        void
+* @par History   无
+*/
+void Clear_All_PWM()
+{
+	for(int i = 0; i < 16; i++){
+		pwm.setPWM(i, 0, 0);
+	}
 }
