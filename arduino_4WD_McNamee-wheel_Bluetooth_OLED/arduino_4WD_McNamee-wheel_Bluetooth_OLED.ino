@@ -10,7 +10,6 @@
 *
 */
 #include <Arduino.h>
-#include <Wire.h>
 #include <Adafruit_PWMServoDriver.h>
 #include <Adafruit_NeoPixel.h> //库文件
 #include <Adafruit_GFX.h>
