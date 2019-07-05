@@ -107,6 +107,9 @@ const int EchoPin = 13; //Echo回声脚
 const int TrigPin = 12; //Trig触发脚
 float distance = 0;
 
+/*颜色值*/
+int red, green, blue;
+
 /*计时变量用于延时*/
 int time = 20000;
 int count = 10;
@@ -1133,6 +1136,45 @@ void serial_data_parse()
 			String m_skp = InputString.substring(i + 3, ii);
 			int m_kp = m_skp.toInt(); //将找到的字符串变成整型
 			Servo180(1, 180 - m_kp);  //转动到指定角度m_kp
+			InputString = "";		  //清空串口数据
+			NewLineReceived = false;
+			return;
+		}
+	}
+	//解析上位机发来的七彩探照灯指令并点亮相应的颜色
+	//如:$4WD,CLR255,CLG0,CLB0# 七彩灯亮红色
+	else if (InputString.indexOf("CLR") > 0)
+	{
+		int i = InputString.indexOf("CLR");
+		int ii = InputString.indexOf(",", i);
+		if (ii > i)
+		{
+			String m_skp = InputString.substring(i + 3, ii);
+			int m_kp = m_skp.toInt();
+			//      Serial.print("CLR:");
+			//      Serial.println(m_kp);
+			red = m_kp;
+		}
+		i = InputString.indexOf("CLG");
+		ii = InputString.indexOf(",", i);
+		if (ii > i)
+		{
+			String m_skp = InputString.substring(i + 3, ii);
+			int m_kp = m_skp.toInt();
+			//      Serial.print("CLG:");
+			//      Serial.println(m_kp);
+			green = m_kp;
+		}
+		i = InputString.indexOf("CLB");
+		ii = InputString.indexOf("#", i);
+		if (ii > i)
+		{
+			String m_skp = InputString.substring(i + 3, ii);
+			int m_kp = m_skp.toInt();
+			//      Serial.print("CLB:");
+			//      Serial.println(m_kp);
+			blue = m_kp;
+			setRGB(red, green, blue); //点亮相应颜色的灯
 			InputString = "";		  //清空串口数据
 			NewLineReceived = false;
 			return;
