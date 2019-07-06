@@ -10,7 +10,6 @@
 *
 */
 #include <Arduino.h>
-#include <Wire.h>
 #include <Adafruit_PWMServoDriver.h>
 #include <Adafruit_NeoPixel.h> //库文件
 #include <Adafruit_GFX.h>
@@ -44,8 +43,7 @@ Adafruit_SSD1306 display(OLED_RESET);
 #define OFF 0 //禁止LED
 
 /*小车运行状态枚举*/
-enum
-{
+const typedef enum {
 	enSTOP = 0,
 	enRUN,
 	enBACK,
@@ -57,6 +55,8 @@ enum
 
 const char enServo[] = {0, 1, 2, 3};
 
+const int key = 7; //按键key
+
 int flag = 0;
 
 /*电压引脚及其变量设置*/
@@ -66,13 +66,19 @@ double VoltageValue = 0;
 /*小车初始速度控制*/
 int CarSpeedControl = 150;
 
+/*颜色值*/
+int red, green, blue;
+
+/*计时变量用于延时*/
+int time = 20000;
+int count = 10;
+
 /*串口数据设置*/
 int IncomingByte = 0;			 //接收到的 data byte
 String InputString = "";		 //用来储存接收到的内容
 boolean NewLineReceived = false; //前一次数据结束标志
 boolean StartBit = false;		 //协议开始标志
 String ReturnTemp = "";			 //存储返回值
-
 /*状态机状态*/
 int g_CarState = enSTOP; //1前2后3左4右0停止
 int g_modeSelect = 0;	//0是默认状态;  1:红外遥控 2:巡线模式 3:超声波避障 4: 七彩探照 5: 寻光模式 6: 红外跟踪
@@ -89,7 +95,6 @@ boolean g_motor = false;
 */
 void setup()
 {
-	//初始化电机驱动IO口为输出方式
 	//串口波特率设置
 	Serial.begin(9600);
 
@@ -99,25 +104,14 @@ void setup()
 
 	pwm.begin();
 	pwm.setPWMFreq(60); // Analog servos run at ~60 Hz updates
-	//电机驱动
-	pwm.setPWM(8, 0, 0);
-	pwm.setPWM(9, 0, 0);
-	pwm.setPWM(11, 0, 0);
-	pwm.setPWM(10, 0, 0);
-
-	pwm.setPWM(12, 0, 0);
-	pwm.setPWM(13, 0, 0);
-	pwm.setPWM(14, 0, 0);
-	pwm.setPWM(15, 0, 0);
-	//外接RGB
-	pwm.setPWM(6, 0, 0);
-	pwm.setPWM(5, 0, 0);
-	pwm.setPWM(4, 0, 0);
+	Clear_All_PWM();
 
 	// PCB_LED();
 	breathing_light(255, 40, 5);
 
 	pinMode(VoltagePin, INPUT);
+
+	pinMode(key, INPUT); //定义按键输入脚
 
 	// by default, we'll generate the high voltage from the 3.3v line internally! (neat!)
 	display.begin(SSD1306_SWITCHCAPVCC, 0x3C); // initialize with the I2C addr 0x3C (for the 128x32)
@@ -463,35 +457,7 @@ float voltage_test()
 	//Voltage是端口A0采集到的ad值（0-1023），
 	//1.75是（R14+R15）/R15的结果，其中R14=15K,R15=20K）。
 
-	/*查表记录打开*/
-	// float voltage = 0;
-	// voltage = VoltageValue;
-	// return voltage;
-
-	//方法二:通过提前测量6.4-8.4v所对应的A0口模拟值,再通过查表法确定其值
-	//       这种方法的误差小于0.1v
-	// int i = 0;
-	// float voltage = 0;
-	// if (VoltageValue > voltage_table[20][1])
-	// {
-	// 	voltage = 8.4;
-	// 	return voltage;
-	// }
-	// if (VoltageValue < voltage_table[0][1])
-	// {
-	// 	voltage = 6.4;
-	// 	return voltage;
-	// }
-	// for (i = 0; i < 20; i++)
-	// {
-	// 	if (VoltageValue >= voltage_table[i][1] && VoltageValue <= voltage_table[i + 1][1])
-	// 	{
-	// 		voltage = voltage_table[i][0] + (VoltageValue - voltage_table[i][1]) * ((voltage_table[i + 1][0] - voltage_table[i][0]) / (voltage_table[i + 1][1] - voltage_table[i][1]));
-	// 		return voltage;
-	// 	}
-	// }
 	return 0;
-	// return;
 }
 
 /**
@@ -509,34 +475,26 @@ void serial_data_parse()
 
 	//解析上位机发来的通用协议指令,并执行相应的动作
 	//$4WD,PTZ180#
-	// if (InputString.indexOf("4WD") > 0)
-	// {
-	// 	//解析上位机发来的舵机云台的控制指令并执行舵机旋转
-	// 	//如:$4WD,PTZ180# 舵机转动到180度
-	// 	if (InputString.indexOf("PTZ") > 0)
-	// 	{
-	// 		int m_kp;
-	// 		int i = InputString.indexOf("PTZ"); //寻找以PTZ开头,#结束中间的字符
-	// 		int ii = InputString.indexOf("#", i);
-	// 		if (ii > i)
-	// 		{
-	// 			String m_skp = InputString.substring(i + 3, ii);
-	// 			int m_kp = m_skp.toInt(); //将找到的字符串变成整型
-	// 			//Serial.print("PTZ:");
-	// 			//Serial.println(m_kp);
-
-	// 			Servo180(7, 180 - m_kp); //转动到指定角度m_kp
-	// 			//150 600   0-180
-	// 			//m_kp = map(180 - m_kp, 0, 180, SERVOMIN, SERVOMAX);
-	// 			// Serial.println(m_kp);
-	// 			//setServoPulse(7, SERVOMIN);
-
-	// 			InputString = ""; //清空串口数据
-	// 			NewLineReceived = false;
-	// 			return;
-	// 		}
-	// 	}
-	// }
+	if (InputString.indexOf("4WD") > 0)
+	{
+		//解析上位机发来的舵机云台的控制指令并执行舵机旋转
+		//如:$4WD,PTZ180# 舵机转动到180度
+		if (InputString.indexOf("PTZ") > 0)
+		{
+			int i = InputString.indexOf("PTZ"); //寻找以PTZ开头,#结束中间的字符
+			int ii = InputString.indexOf("#", i);
+			if (ii > i)
+			{
+				String m_skp = InputString.substring(i + 3, ii);
+				int m_kp = m_skp.toInt(); //将找到的字符串变成整型
+				Servo180(2, 180 - m_kp);  //转动到指定角度m_kp
+				InputString = "";		  //清空串口数据
+				NewLineReceived = false;
+				return;
+			}
+		}
+	}
+	//解析上位机发来的通用协议指令,并执行相应的动作
 	//如:$1,0,0,0,0,0,0,0,0,0#    小车前进
 	if (InputString.indexOf("4WD") == -1)
 	{
@@ -553,6 +511,12 @@ void serial_data_parse()
 		{
 			g_CarState = enSTOP;
 		}
+
+		//小车鸣笛判断
+		if (InputString[5] == '1') //鸣笛
+		{
+		}
+		
 		//舵机左旋右旋判断
 		if (InputString[9] == '1') //舵机旋转到180度
 		{
@@ -770,4 +734,21 @@ void welcome()
 	display.println("Welcome!");
 	display.println("Hola,Maker");
 	display.display();
+}
+
+/*
+* Function       Controling
+* @author        wusicaijuan
+* @date          2019.07.04
+* @brief         控制模式
+* @param[in]     void
+* @param[out]    void
+* @retval        void
+* @par History   无
+*/
+void Clear_All_PWM()
+{
+	for(int i = 0; i < 16; i++){
+		pwm.setPWM(i, 0, 0);
+	}
 }
