@@ -482,7 +482,6 @@ void serial_data_parse()
 	//$4WD,UD180#
 	if (InputString.indexOf("4WD") > 0)
 	{
-		Serial.println(InputString);
 		//解析上位机发来的舵机云台的控制指令并执行舵机旋转
 		//$4WD,UD180# 舵机转动到180度
 		if (InputString.indexOf("UD") > 0)
@@ -495,7 +494,6 @@ void serial_data_parse()
 				int m_kp = m_skp.toInt(); //将找到的字符串变成整型
 				// Servo180(3, 180 - m_kp);  //转动到指定角度m_kp
 				Servo180(3, 180 - m_kp); //转动到指定角度m_kp
-				delay(10);
 			}
 			InputString = ""; //清空串口数据
 			NewLineReceived = false;
@@ -530,22 +528,26 @@ void serial_data_parse()
 	if (InputString.indexOf("4WD") == -1)
 	{
 		//小车加减速判断
-		if (InputString[2] == '1') //加速，每次加50
+		if (InputString[3] == '1') //加速，每次加50
 		{
 			CarSpeedControl += 50;
 			if (CarSpeedControl > 150)
 			{
 				CarSpeedControl = 150;
 			}
+			InputString = ""; //清空串口数据
+			NewLineReceived = false;
 			return;
 		}
-		if (InputString[2] == '2') //减速，每次减50
+		if (InputString[3] == '2') //减速，每次减50
 		{
 			CarSpeedControl -= 50;
 			if (CarSpeedControl < 50)
 			{
 				CarSpeedControl = 50;
 			}
+			InputString = ""; //清空串口数据
+			NewLineReceived = false;
 			return;
 		}
 
