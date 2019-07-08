@@ -75,6 +75,9 @@ int Servo_LR = 90;
 /*电压引脚及其变量设置*/
 const int VoltagePin = A2;
 double VoltageValue = 0;
+const int flag_time = 2000;
+int newtime = 0;
+int lasttime = 0;
 
 /*小车初始速度控制*/
 static int CarSpeedControl = 150;
@@ -85,9 +88,8 @@ String InputString = "";		 //用来储存接收到的内容
 boolean NewLineReceived = false; //前一次数据结束标志
 boolean StartBit = false;		 //协议开始标志
 /*状态机状态*/
-static int g_CarState = enSTOP;			//1前2后3左4右5左旋6右旋7停止
+static int g_CarState = enSTOP;		//1前2后3左4右5左旋6右旋7停止
 static int g_ServoState = enServoS; //1左转2右转3停止
-
 
 /**
 * Function       setup
@@ -126,7 +128,6 @@ void setup()
 	// display.clearDisplay(); // clears the screen and buffer
 
 	welcome();
-	delay(3000);
 }
 
 /**
@@ -453,6 +454,8 @@ void breathing_light(int brightness, int time, int increament)
 */
 float voltage_test()
 {
+	// newtime = millis();
+	// if(newtime - lasttime > flag_time){
 	VoltageValue = analogRead(VoltagePin); //读取A0口值,换算为电压值
 
 	//方法一:通过电路原理图和采集的A0口模拟值得到电压值
@@ -461,8 +464,9 @@ float voltage_test()
 	return VoltageValue;
 	//Voltage是端口A0采集到的ad值（0-1023），
 	//1.75是（R14+R15）/R15的结果，其中R14=15K,R15=20K）。
+	// lasttime = newtime;
 
-	return 0;
+	// }
 }
 
 /**
@@ -492,8 +496,7 @@ void serial_data_parse()
 			{
 				String m_skp = InputString.substring(i + 2, ii);
 				int m_kp = m_skp.toInt(); //将找到的字符串变成整型
-				// Servo180(3, 180 - m_kp);  //转动到指定角度m_kp
-				Servo180(3, 180 - m_kp); //转动到指定角度m_kp
+				Servo180(3, 180 - m_kp);  //转动到指定角度m_kp
 			}
 			InputString = ""; //清空串口数据
 			NewLineReceived = false;
@@ -525,7 +528,7 @@ void serial_data_parse()
 	}
 	//解析上位机发来的通用协议指令,并执行相应的动作
 	//如:$1,0,0,0#    小车前进
-	if (InputString.indexOf("4WD") == -1)
+	if ((InputString.indexOf("4WD") == -1) && (InputString.length() == 9))
 	{
 		//小车加减速判断
 		if (InputString[3] == '1') //加速，每次加50
@@ -611,6 +614,9 @@ void serial_data_parse()
 			break;
 		}
 	}
+	InputString = ""; //清空串口数据
+	NewLineReceived = false;
+	return;
 }
 /**
 * Function       loop
@@ -624,21 +630,29 @@ void serial_data_parse()
 
 void loop()
 {
+	serialEvent();
 	if (NewLineReceived)
 	{
 		if (flag == 0)
 		{
-			Controling();
-			Display_voltage();
 			flag = 1;
 		}
-		Serial.println(InputString);
+		// Serial.println(InputString);
 		serial_data_parse(); //调用串口解析函数
 	}
-
+	if (flag == 1)
+	{
+		voltage_test();
+		newtime = millis();
+		if (newtime - lasttime > flag_time)
+		{
+			Controling();
+			Display_voltage();
+			lasttime = newtime;
+			InputString = ""; //清空串口数据
+		}
+	}
 	Servo_State();
-
-	voltage_test();
 }
 
 /**
@@ -780,7 +794,7 @@ void Servo_State()
 				Servo_LR = 180;
 			}
 			Servo180(2, Servo_LR);
-			delay(10);
+			delay(5);
 		}
 		if (g_ServoState == enServoR)
 		{
@@ -790,7 +804,7 @@ void Servo_State()
 				Servo_LR = 0;
 			}
 			Servo180(2, Servo_LR);
-			delay(10);
+			delay(5);
 		}
 		return;
 	}
