@@ -1401,6 +1401,7 @@ void serialEvent()
 */
 void loop()
 {
+	serialEvent();
 	if (NewLineReceived)
 	{
 		if (flag == 0)
