@@ -497,7 +497,7 @@ void serial_data_parse()
 			}
 			InputString = ""; //清空串口数据
 			NewLineReceived = false;
-			return;
+			return;//直接跳出本次loop()
 		}
 
 		//解析上位机发来的舵机云台的控制指令并执行舵机旋转
@@ -525,6 +525,7 @@ void serial_data_parse()
 	}
 	//解析上位机发来的通用协议指令,并执行相应的动作
 	//如:$1,0,0,0#    小车前进
+	//检测长度以防误判
 	if ((InputString.indexOf("4WD") == -1) && (InputString.length() == 9))
 	{
 		//小车加减速判断
