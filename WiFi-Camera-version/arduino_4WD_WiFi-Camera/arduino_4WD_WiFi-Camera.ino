@@ -69,15 +69,16 @@ const char enServo[] = {0, 1, 2, 3};
 
 const int key = 7; //按键key
 
-int flag = 0;
+int flag = 0;//开机欢迎界面标志位
 int Servo_LR = 90;
 
 /*电压引脚及其变量设置*/
 const int VoltagePin = A2;
-double VoltageValue = 0;
-const int flag_time = 2000;
-int newtime = 0;
-int lasttime = 0;
+double VoltageValue = 0;//电压值
+
+const int flag_time = 2000;//时间标记点间隔2s
+int newtime = 0;//记录系统当前时间
+int lasttime = 0;//记录上一次系统时间标记点
 
 /*小车初始速度控制*/
 static int CarSpeedControl = 150;
@@ -87,14 +88,14 @@ int IncomingByte = 0;			 //接收到的 data byte
 String InputString = "";		 //用来储存接收到的内容
 boolean NewLineReceived = false; //前一次数据结束标志
 boolean StartBit = false;		 //协议开始标志
-/*状态机状态*/
+/*电机舵机状态*/
 static int g_CarState = enSTOP;		//1前2后3左4右5左旋6右旋7停止
 static int g_ServoState = enServoS; //1左转2右转3停止
 
 /**
 * Function       setup
-* @author        liusen
-* @date          2017.07.25
+* @author        wusicaijuan
+* @date          2019.07.04
 * @brief         初始化配置
 * @param[in]     void
 * @retval        void
@@ -112,8 +113,9 @@ void setup()
 	pwm.begin();
 	pwm.setPWMFreq(60); // Analog servos run at ~60 Hz updates
 	Clear_All_PWM();
+	//舵机归位
 	Servo180(1, 90);
-	Servo180(2, 90);
+	Servo180(2, Servo_LR);
 
 	// PCB_LED();
 	breathing_light(255, 40, 5);
@@ -207,7 +209,7 @@ void brake()
 * Function       left
 * @author        wusicaijuan
 * @date          2019.06.26
-* @brief         小车左转(左轮不动，右轮前进)
+* @brief         小车左移
 * @param[in]     Speed
 * @param[out]    void
 * @retval        void
@@ -231,7 +233,7 @@ void left(int Speed)
 * Function       right
 * @author        wusicaijuan
 * @date          2019.06.26
-* @brief         小车右转(右轮不动，左轮前进)
+* @brief         小车右移
 * @param[in]     Speed
 * @param[out]    void
 * @retval        void
@@ -382,10 +384,10 @@ void PCB_RGB(int R, int G, int B)
 }
 
 /**
-* Function       PCB_RGB(R,G,B)
+* Function       PCB_RGB_OFF()
 * @author        wusicaijuan
 * @date          2019.06.26
-* @brief         设置板载RGB灯
+* @brief         关闭板载RGB灯
 * @param[in1]	 void
 * @param[out]    void
 * @retval        void
@@ -418,7 +420,7 @@ void PCB_LED()
 * Function       breathing_light(brightness,time,increament)
 * @author        wusicaijuan
 * @date          2019.06.26
-* @brief         呼吸灯
+* @brief         开机呼吸灯
 * @param[in1]	 brightness
 * @param[in2]    time
 * @param[in3]    increament
@@ -446,8 +448,8 @@ void breathing_light(int brightness, int time, int increament)
 
 /**
 * Function       voltage_test
-* @author        Danny
-* @date          2017.07.26
+* @author        wusicaijuan
+* @date          2019.07.04
 * @brief         电池电压引脚检测
 * @param[in]     void
 * @param[out]    void
@@ -468,8 +470,8 @@ float voltage_test()
 
 /**
 * Function       serial_data_parse
-* @author        liusen
-* @date          2017.07.25
+* @author        wusicaijuan
+* @date          2019.07.04
 * @brief         串口数据解析并指定相应的动作
 * @param[in]     void
 * @param[out]    void
@@ -497,7 +499,7 @@ void serial_data_parse()
 			}
 			InputString = ""; //清空串口数据
 			NewLineReceived = false;
-			return;//直接跳出本次loop()
+			return; //直接跳出本次loop()
 		}
 
 		//解析上位机发来的舵机云台的控制指令并执行舵机旋转
@@ -620,7 +622,7 @@ void serial_data_parse()
 * Function       loop
 * @author        wusicaijuan
 * @date          2019.07.08
-* @brief         
+* @brief         对串口发送过来的数据解析，并执行相应的指令
 * @param[in]     void
 * @retval        void
 * @par History   无
@@ -709,10 +711,10 @@ void Controling()
 }
 
 /*
-* Function       Controling
+* Function       Display_voltage
 * @author        wusicaijuan
 * @date          2019.07.04
-* @brief         控制模式
+* @brief         OLED显示电压
 * @param[in]     void
 * @param[out]    void
 * @retval        void
@@ -772,10 +774,10 @@ void Clear_All_PWM()
 }
 
 /*
-* Function       Controling
+* Function       Servo_State
 * @author        wusicaijuan
 * @date          2019.07.04
-* @brief         控制模式
+* @brief         舵机状态控制
 * @param[in]     void
 * @param[out]    void
 * @retval        void

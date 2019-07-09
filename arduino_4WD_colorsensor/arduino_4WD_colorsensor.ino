@@ -50,6 +50,9 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(MAX_LED, PIN, NEO_RGB + NEO_KHZ800);
 //Control Register
 #define RST 0x00
 
+const uint8_t i = 0;
+uint32_t color;
+
 unsigned int Red = 0;
 unsigned int Green = 0;
 unsigned int Blue = 0;
@@ -66,7 +69,7 @@ unsigned int val_blue = 0;
   */
 void RGB_Config(void)
 {
-	uint8_t W_ADDR;
+	// uint8_t W_ADDR;
 
 	//复位寄存器，200ms积分时间，CRGB通道全部开启
 	Wire.beginTransmission(ADDR); //发送Device地址
@@ -191,8 +194,6 @@ void setup()
 	printf_begin();
 	Serial.println("\nI2C Scanner");
 	RGB_Config();
-	pinMode(4, OUTPUT);
-	digitalWrite(4, 1);
 
 	strip.begin(); //初始化Adafruit_NeoPixel；
 	strip.show();  //显示所有LED为关状态;
@@ -202,9 +203,11 @@ void loop()
 {
 	// put your main code here, to run repeatedly:
 	// ReadColor();
-	uint8_t i = 0;
-	uint32_t color = strip.Color(val_green, val_red, val_blue); // 绿红蓝
+	// uint32_t color = strip.Color(val_green, val_red, val_blue); // 绿红蓝
 	ReadColor();
+	val_green = map(val_green, 0, 255, 0, 10);
+	val_red = map(val_red, 0, 255, 0, 10);
+	val_blue = map(val_blue, 0, 255, 0, 10);
 	color = strip.Color(val_green, val_red, val_blue); // 绿红蓝
 	strip.setPixelColor(i, color);
 	strip.show();
