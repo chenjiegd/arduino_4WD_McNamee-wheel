@@ -1,5 +1,14 @@
-#define wusicaijuan chenshuaiqi
-
+/**
+* @par Copyright (C): 2010-2019, Shenzhen Yahboom Tech
+* @file         arduino_4WD_colorsensor
+* @author       wusicaijuan
+* @version      V1.0
+* @date         2019.07.04
+* @brief       	arduino4WD颜色识别
+* @details
+* @par History  见如下说明
+*
+*/
 #include <Adafruit_NeoPixel.h>
 #include <Wire.h>
 void RGB_Config(uint8_t RGB);

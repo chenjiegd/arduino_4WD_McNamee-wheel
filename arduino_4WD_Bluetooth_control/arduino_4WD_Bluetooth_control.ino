@@ -216,7 +216,7 @@ void setup()
 	// digitalWrite(OutfirePin, HIGH);
 
 	//初始化舵机引脚为输出模式
-	pinMode(ServoPin, OUTPUT);
+	// pinMode(ServoPin, OUTPUT);
 	
 	randomSeed(analogRead(0));   //设置一个随机数产生源模拟口 0
 }
