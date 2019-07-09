@@ -112,6 +112,8 @@ void setup()
 	pwm.begin();
 	pwm.setPWMFreq(60); // Analog servos run at ~60 Hz updates
 	Clear_All_PWM();
+	Servo180(1, 90);
+	Servo180(2, 90);
 
 	// PCB_LED();
 	breathing_light(255, 40, 5);
@@ -454,8 +456,6 @@ void breathing_light(int brightness, int time, int increament)
 */
 float voltage_test()
 {
-	// newtime = millis();
-	// if(newtime - lasttime > flag_time){
 	VoltageValue = analogRead(VoltagePin); //读取A0口值,换算为电压值
 
 	//方法一:通过电路原理图和采集的A0口模拟值得到电压值
@@ -464,9 +464,6 @@ float voltage_test()
 	return VoltageValue;
 	//Voltage是端口A0采集到的ad值（0-1023），
 	//1.75是（R14+R15）/R15的结果，其中R14=15K,R15=20K）。
-	// lasttime = newtime;
-
-	// }
 }
 
 /**
@@ -637,6 +634,7 @@ void loop()
 		{
 			flag = 1;
 		}
+		// 调试查看串口数据
 		// Serial.println(InputString);
 		serial_data_parse(); //调用串口解析函数
 	}
