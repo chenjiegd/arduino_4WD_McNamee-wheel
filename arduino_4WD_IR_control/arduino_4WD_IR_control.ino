@@ -86,7 +86,7 @@ int lasttime = 0;			//记录上一次系统时间标记点
 
 /*小车初始速度控制*/
 static int CarSpeedControl = 150;
-static int g_carstate = enSTOP;//1前2后3左4右5左旋6右旋7停止
+static int g_carstate = enSTOP;		//1前2后3左4右5左旋6右旋7停止
 static int g_ServoState = enServoS; //1左转2右转3停止
 
 const int buzzer = 10; //设置控制蜂鸣器的引脚
@@ -174,52 +174,50 @@ void loop()
 		//开关
 		case 0X00FF00FF:
 			RGB_OFF();
-			PCB_RGB_OFF();
-			strip.show();
 			break;
 		//灯
 		case 0x00FF40BF:
 			setRGB(255, 255, 255);
-			PCB_RGB(10, 10, 10);
-			strip.show();
 			break;
 		//1
 		case 0x00FF08F7:
-			
+
 			break;
 		//2
 		case 0x00FF8877:
-			
+
 			break;
 		//3
 		case 0x00FF48B7:
-			
+
 			break;
 		//4
 		case 0x00FF28D7:
-			
+
 			break;
 		//加号
 		case 0x00FF30CF:
 			CarSpeedControl += 50;
-			if(CarSpeedControl > 150){
+			if (CarSpeedControl > 150)
+			{
 				CarSpeedControl = 150;
 			}
 			break;
 		//0
 		case 0x00FFB04F:
-			
+
 			break;
 		//减号
 		case 0x00FF708F:
 			CarSpeedControl -= 50;
-			if(CarSpeedControl < 50){
+			if (CarSpeedControl < 50)
+			{
 				CarSpeedControl = 50;
 			}
 			break;
 		//5
 		case 0x00FFA857:
-			
+
 			break;
 		//喇叭
 		case 0x00FFA05F:
@@ -232,7 +230,7 @@ void loop()
 			break;
 		//8
 		case 0x00ff9867:
-			
+
 			break;
 		//9
 		case 0x00ff58a7:
@@ -240,7 +238,7 @@ void loop()
 			break;
 		//6
 		case 0x00FF6897:
-			
+
 			break;
 		//前进
 		case 0x00FF807F:
@@ -279,25 +277,50 @@ void loop()
 		last = millis();
 	}
 	switch (g_carstate)
-    {
-      //case enSTOP: brake(); break;
-      case enRUN: run(CarSpeedControl); break;
-      case enLEFT: left(CarSpeedControl); break;
-      case enRIGHT: right(CarSpeedControl); break;
-      case enBACK: back(CarSpeedControl); break;
-      case enSPINLEFT:spin_left(CarSpeedControl); break;
-      case enSPINRIGHT:spin_right(CarSpeedControl);break;
-      default: brake(); break;
-    }
+	{
+	//case enSTOP: brake(); break;
+	case enRUN:
+		run(CarSpeedControl);
+		break;
+	case enLEFT:
+		left(CarSpeedControl);
+		break;
+	case enRIGHT:
+		right(CarSpeedControl);
+		break;
+	case enBACK:
+		back(CarSpeedControl);
+		break;
+	case enSPINLEFT:
+		spin_left(CarSpeedControl);
+		break;
+	case enSPINRIGHT:
+		spin_right(CarSpeedControl);
+		break;
+	default:
+		brake();
+		break;
+	}
 	switch (g_ServoState)
 	{
 	case enServoL:
 		Servo_LR++;
-		if(Servo_LR>180){
+		if (Servo_LR > 180)
+		{
 			Servo_LR = 180;
 		}
+		Servo180(1, Servo_LR);
+		delay(5);
 		break;
-	
+	case enServoR:
+		Servo_LR--;
+		if (Servo_LR < 0)
+		{
+			Servo_LR = 0;
+		}
+		Servo180(1, Servo_LR);
+		delay(5);
+		break;
 	default:
 		break;
 	}
