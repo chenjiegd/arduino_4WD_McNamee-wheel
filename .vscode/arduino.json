@@ -1,0 +1,6 @@
+{
+    "port": "COM20",
+    "board": "arduino:avr:uno",
+    "programmer": "AVRISP mkII",
+    "sketch": "WiFi-Camera-version\\arduino_4WD_WiFi-Camera\\arduino_4WD_WiFi-Camera.ino"
+}
